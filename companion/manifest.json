@@ -1,26 +1,33 @@
 {
-	"id": "your-module-name",
-	"name": "your-module-name",
-	"shortname": "module-shortname",
-	"description": "A short one line description of your module",
-	"version": "0.0.0",
+	"id": "companion-module-tellyo-streamstudio",
+	"name": "tellyo-streamstudio",
+	"shortname": "streamstudio",
+	"description": "Module to control Tellyo Stream Studio instances through Studio Controller",
+	"version": "1.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/bitfocus/companion-module-your-module-name.git",
-	"bugs": "https://github.com/bitfocus/companion-module-your-module-name/issues",
+	"repository": "git+https://gitlab.tellyo.com/tellyo/companion-module-tellyo-streamstudio.git",
+	"bugs": "https://github.com/bitfocus/companion-module-companion-module-tellyo-streamstudio/issues",
 	"maintainers": [
 		{
-			"name": "Your name",
-			"email": "Your email"
+			"name": "Paweł Jaśpiński",
+			"email": "pawel.jaspinski@tellyo.com",
+			"url": "https://tellyo.com/"
 		}
 	],
+	"legacyIds": [],
 	"runtime": {
 		"type": "node18",
 		"api": "nodejs-ipc",
 		"apiVersion": "0.0.0",
-		"entrypoint": "../main.js"
+		"entrypoint": "..\\dist\\index.js"
 	},
-	"legacyIds": [],
-	"manufacturer": "Your company",
-	"products": ["Your product"],
-	"keywords": []
+	"manufacturer": "Tellyo",
+	"products": [
+		"Stream Studio"
+	],
+	"keywords": [
+		"Software",
+		"Vision Mixer",
+		"Cloud"
+	]
 }

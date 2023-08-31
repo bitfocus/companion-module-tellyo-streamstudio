@@ -1,3 +1,4 @@
-# companion-module-[replace with module name]
+# companion-module-tellyo-streamstudio
 
-See [HELP.md](./companion/HELP.md) and [LICENSE](./LICENSE)
+Provides control over Tellyo Stream Studio instances through Studio Controller.
+Visit [tellyo.com](https://www.tellyo.com/) to learn more about our software.
