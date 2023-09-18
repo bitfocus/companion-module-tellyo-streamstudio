@@ -8,6 +8,7 @@ import {
     CompanionInputFieldNumber,
     CompanionInputFieldTextInput,
     DropdownChoice,
+    InputValue,
     SomeCompanionActionInputField,
 } from "@companion-module/base";
 import {
@@ -168,8 +169,13 @@ const getCallback = (template: CommandTemplate, ssInstance: StreamStudioInstance
                 }
             }
 
-            const value = action.options[param.id];
-            if (typeof value === "undefined") return;
+            let value = action.options[param.id] as InputValue;
+            if (typeof value === "undefined") {
+                // Handling required const parameters
+                if (param.type !== CommandParameterType.CONST || param.property !== CommandParameterProperty.REQUIRED)
+                    return;
+                if (param.value) value = param.value;
+            }
             if (value === DEFAULT_CHOICE_ID) {
                 if (param.property === CommandParameterProperty.REQUIRED) {
                     requiredParamNotSet = true;
