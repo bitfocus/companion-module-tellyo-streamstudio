@@ -10,7 +10,8 @@ export const processConfirmation = (message: ConfirmationWSMessage, ssInstance: 
 
     confirmation.parametersConfirmations.forEach((confirmation) => {
         switch (confirmation.topic) {
-            case "audiomixer.output.muted/muted": {
+            case "audiomixer.output.muted/muted":
+            case "SetProgramMuted/muted": {
                 const output = getValueAtPath(message, "name");
                 const outputFromState = ssInstance.projectState.audioOutputs[output];
                 if (typeof outputFromState === "undefined") break;
