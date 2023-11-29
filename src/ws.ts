@@ -38,7 +38,10 @@ class WebSocketInstance extends EventEmitter {
 
         this.ws.onopen = () => this.updateStatus();
 
-        this.ws.onclose = () => this.updateStatus();
+        this.ws.onclose = () => {
+            this.updateStatus();
+            delete this.ws;
+        };
 
         this.ws.onmessage = (event: MessageEvent) => {
             if (typeof event.data !== "string") return;
