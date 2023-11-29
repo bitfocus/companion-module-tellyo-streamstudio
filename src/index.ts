@@ -26,6 +26,8 @@ import { processUpdate } from "./updates";
 import { processConfirmation } from "./confirmations";
 import { generatePresets } from "./presets";
 
+const RECONNECT_TIMEOUT_IN_MS = 1000;
+
 class StreamStudioInstance extends InstanceBase<Config> {
     private ws = new WebSocketInstance(this, true);
     public options: Options = {};
@@ -39,6 +41,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
         ip: "",
         port: 0,
     };
+
     constructor(internal: unknown) {
         super(internal);
     }
@@ -58,7 +61,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
                     this.updateStatus(InstanceStatus.Connecting);
                     break;
                 case WebSocketStatus.CLOSED:
-                    this.updateStatus(InstanceStatus.Disconnected);
+                    this.startReconnecting();
                     break;
                 case WebSocketStatus.CLOSING:
                     this.updateStatus(InstanceStatus.Disconnected);
@@ -135,20 +138,20 @@ class StreamStudioInstance extends InstanceBase<Config> {
             }
         });
 
-        this.log("debug", `Connecting to ${config.ip} at port ${config.port}.`);
-        this.ws.connect(config.ip, config.port);
+        this.connectToWsServer();
     }
 
     public async configUpdated(config: Config): Promise<void> {
         this.config = config;
         this.ws.disconnect();
+        this.stopReconnecting();
 
         if (!config.ip || !config.port) {
             this.updateStatus(InstanceStatus.BadConfig, "Missing Studio Controller IP and/or port.");
             return;
         }
 
-        this.ws.connect(config.ip, config.port);
+        this.connectToWsServer();
     }
 
     public getConfigFields(): SomeCompanionConfigField[] {
@@ -156,14 +159,40 @@ class StreamStudioInstance extends InstanceBase<Config> {
     }
 
     public async destroy(): Promise<void> {
+        this.stopReconnecting();
+        this.ws.disconnect();
         this.commandsTemplates = [];
         this.options = {};
         this.activeOptionsCalls = 0;
         this.listenedUpdates = [];
         this.awaitedConfirmations = [];
         this.awaitedRequests = [];
-        this.ws.disconnect();
     }
+
+    // AUTO-RECONNECTING
+    private reconnectTimer: NodeJS.Timer | null = null;
+
+    private connectToWsServer = () => {
+        const { ip, port } = this.config;
+        this.log("debug", `Connecting to ${ip} at port ${port}.`);
+        this.ws.connect(ip, port);
+    };
+
+    private startReconnecting = () => {
+        this.updateStatus(InstanceStatus.Disconnected, "Trying to reconnect");
+        this.reconnectTimer = setTimeout(() => {
+            this.log("debug", `Reconnecting...`);
+            this.connectToWsServer();
+            this.reconnectTimer = null;
+        }, RECONNECT_TIMEOUT_IN_MS);
+    };
+
+    private stopReconnecting = () => {
+        if (this.reconnectTimer !== null) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+    };
 
     // UPDATES
 
