@@ -3,7 +3,6 @@ import { Config, getConfigFields } from "./config";
 import WebSocketInstance, { WebSocketEventType, WebSocketStatus } from "./ws";
 import {
     CommandsTemplatesWSMessage,
-    ConfirmationWSMessage,
     GatewayConnectionWSMessage,
     ParameterOptionsWSMessage,
     UpdateWSMessage,
@@ -17,13 +16,11 @@ import generateActions, { getParameterTopic } from "./actions";
 import generateFeedbacks from "./feedbacks";
 import { ProjectState } from "./types/projectState";
 import { ListenedUpdate } from "./types/updates";
-import { Confirmation } from "./types/confirmations";
 import { GenericObject, Request } from "./types/requests";
 import { generateMessageId } from "./utils";
 import { initProjectState } from "./projectState";
 import { processRequest } from "./requests";
 import { processUpdate } from "./updates";
-import { processConfirmation } from "./confirmations";
 import { generatePresets } from "./presets";
 
 const RECONNECT_TIMEOUT_IN_MS = 1000;
@@ -35,7 +32,6 @@ class StreamStudioInstance extends InstanceBase<Config> {
     private activeOptionsCalls = 0;
     public projectState: ProjectState = initProjectState;
     private listenedUpdates: ListenedUpdate[] = [];
-    private awaitedConfirmations: Confirmation[] = [];
     private awaitedRequests: Request[] = [];
     public config: Config = {
         ip: "",
@@ -129,11 +125,6 @@ class StreamStudioInstance extends InstanceBase<Config> {
                         processRequest(typedMessage, awaitedRequest.requestType, this);
                         this.removeAwaitedRequest(messageId as string);
                     }
-                    if (this.awaitedConfirmations.some((confirmation) => confirmation.messageId === messageId)) {
-                        const typedMessage = message as ConfirmationWSMessage;
-                        processConfirmation(typedMessage, this);
-                        this.removeAwaitedConfrimation(messageId as string);
-                    }
                 }
             }
         });
@@ -165,7 +156,6 @@ class StreamStudioInstance extends InstanceBase<Config> {
         this.options = {};
         this.activeOptionsCalls = 0;
         this.listenedUpdates = [];
-        this.awaitedConfirmations = [];
         this.awaitedRequests = [];
     }
 
@@ -202,22 +192,6 @@ class StreamStudioInstance extends InstanceBase<Config> {
 
     public removeListenedUpdate = (feedbackId: string) => {
         this.listenedUpdates = this.listenedUpdates.filter((update) => update.feedbackId !== feedbackId);
-    };
-
-    // CONFIRMATIONS
-
-    public addAwaitedConfirmation = (newConfirmation: Confirmation) => {
-        this.awaitedConfirmations.push(newConfirmation);
-    };
-
-    public getAwaitedConfirmation = (messageId: string) => {
-        return this.awaitedConfirmations.find((confirmation) => confirmation.messageId === messageId);
-    };
-
-    public removeAwaitedConfrimation = (messageId: string) => {
-        this.awaitedConfirmations = this.awaitedConfirmations.filter(
-            (confirmation) => confirmation.messageId !== messageId
-        );
     };
 
     // REQUESTS
