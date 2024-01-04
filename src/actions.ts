@@ -24,7 +24,6 @@ import { commandParameterTypeToInputType, generateMessageId, setValueAtPath, tra
 import StreamStudioInstance from "./index";
 import { Options } from "./types/options";
 import { getBooleanState } from "./projectState";
-import { Confirmation } from "./types/confirmations";
 import { RequestType } from "./types/requests";
 
 const COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET = [
@@ -145,10 +144,6 @@ const getCallback = (template: CommandTemplate, ssInstance: StreamStudioInstance
             "request-type": template.type,
             "message-id": messageId,
         };
-        const confirmation: Confirmation = {
-            messageId,
-            parametersConfirmations: [],
-        };
 
         let requiredParamNotSet = false;
 
@@ -161,10 +156,6 @@ const getCallback = (template: CommandTemplate, ssInstance: StreamStudioInstance
                 if (BOOLEAN_CONTROLLABLE_TOPICS_WITH_STORED_VALUES.includes(paremterTopic)) {
                     const value = !getBooleanState(paremterTopic, action.options, ssInstance.projectState);
                     message[param.id] = value;
-                    confirmation.parametersConfirmations.push({
-                        topic: paremterTopic,
-                        newValue: value,
-                    });
                     return;
                 }
             }
@@ -184,10 +175,6 @@ const getCallback = (template: CommandTemplate, ssInstance: StreamStudioInstance
             }
 
             setValueAtPath(message, value, param.id);
-            confirmation.parametersConfirmations.push({
-                topic: getParameterTopic(template.id, param.id),
-                newValue: value,
-            });
         });
 
         if (requiredParamNotSet) {
@@ -198,7 +185,6 @@ const getCallback = (template: CommandTemplate, ssInstance: StreamStudioInstance
         }
 
         ssInstance.sendByWs(message);
-        ssInstance.addAwaitedConfirmation(confirmation);
     };
 };
 

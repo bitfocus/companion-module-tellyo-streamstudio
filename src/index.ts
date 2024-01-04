@@ -16,19 +16,23 @@ import generateActions, { getParameterTopic } from "./actions";
 import generateFeedbacks from "./feedbacks";
 import { ProjectState } from "./types/projectState";
 import { ListenedUpdate } from "./types/updates";
+import { ApiDefinition } from "./types/apiDefinition";
 import { GenericObject, Request } from "./types/requests";
 import { generateMessageId } from "./utils";
 import { initProjectState } from "./projectState";
 import { processRequest } from "./requests";
 import { processUpdate } from "./updates";
 import { generatePresets } from "./presets";
+import { request } from "https";
 
 const RECONNECT_TIMEOUT_IN_MS = 1000;
+const JSON_API_DEFINITION_URL = "https://support.oneskyapp.com/hc/en-us/article_attachments/202761627";
 
 class StreamStudioInstance extends InstanceBase<Config> {
     private ws = new WebSocketInstance(this, true);
     public options: Options = {};
     private commandsTemplates: ComandTemplateGroup[] = [];
+    private apiDefinition: ApiDefinition | null = null;
     private activeOptionsCalls = 0;
     public projectState: ProjectState = initProjectState;
     private listenedUpdates: ListenedUpdate[] = [];
@@ -42,9 +46,36 @@ class StreamStudioInstance extends InstanceBase<Config> {
         super(internal);
     }
 
+    // GETTING JSON API DEFINITION
+    private getApiDefinition = (): Promise<ApiDefinition> => {
+        this.log("debug", "Fetching JSON API definition...");
+        return new Promise((resolve, reject) => {
+            const req = request(JSON_API_DEFINITION_URL, (res) => {
+                res.on("data", (data) => {
+                    const json: ApiDefinition = JSON.parse(data);
+                    resolve(json);
+                });
+            });
+
+            req.on("error", (e) => {
+                this.log("debug", `Failed to fetch JSON API definition: ${e.message}`);
+                reject();
+            });
+
+            req.end();
+        });
+    };
+
     // COMPANION METHODS
     public async init(config: Config): Promise<void> {
         this.config = config;
+
+        try {
+            this.apiDefinition = await this.getApiDefinition();
+        } catch (e) {
+            this.updateStatus(InstanceStatus.ConnectionFailure);
+            return;
+        }
 
         this.ws.addListener(WebSocketEventType.STATUS_CHANGED, (status: WebSocketStatus) => {
             this.log("debug", `WebSocket status changed to ${status}`);
