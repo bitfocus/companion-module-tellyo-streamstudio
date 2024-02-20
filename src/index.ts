@@ -2,7 +2,6 @@ import { InstanceBase, InstanceStatus, SomeCompanionConfigField, runEntrypoint }
 import { Config, getConfigFields } from "./config";
 import WebSocketInstance, { WebSocketEventType, WebSocketStatus } from "./ws";
 import {
-    CommandsTemplatesWSMessage,
     GatewayConnectionWSMessage,
     ParameterOptionsWSMessage,
     UpdateWSMessage,
@@ -11,30 +10,26 @@ import {
     WebSocketUpdateTypes,
 } from "./types/wsMessages";
 import { Options } from "./types/options";
-import { ComandTemplateGroup } from "./types/commandsTemplates";
 import generateActions, { getParameterTopic } from "./actions";
 import generateFeedbacks from "./feedbacks";
-import { ProjectState } from "./types/projectState";
 import { ListenedUpdate } from "./types/updates";
 import { ApiDefinition } from "./types/apiDefinition";
 import { GenericObject, Request } from "./types/requests";
 import { generateMessageId } from "./utils";
-import { initProjectState } from "./projectState";
 import { processRequest } from "./requests";
 import { processUpdate } from "./updates";
 import { generatePresets } from "./presets";
-import { request } from "https";
+// import { request } from "https";
+import apiDefinitions from "./apiDefinitions.json";
 
 const RECONNECT_TIMEOUT_IN_MS = 1000;
-const JSON_API_DEFINITION_URL = "https://support.oneskyapp.com/hc/en-us/article_attachments/202761627";
+// const JSON_API_DEFINITION_URL = "https://support.oneskyapp.com/hc/en-us/article_attachments/202761627";
 
 class StreamStudioInstance extends InstanceBase<Config> {
     private ws = new WebSocketInstance(this, true);
     public options: Options = {};
-    private commandsTemplates: ComandTemplateGroup[] = [];
-    private apiDefinition: ApiDefinition | null = null;
+    public apiDefinition: ApiDefinition | null = null;
     private activeOptionsCalls = 0;
-    public projectState: ProjectState = initProjectState;
     private listenedUpdates: ListenedUpdate[] = [];
     private awaitedRequests: Request[] = [];
     public config: Config = {
@@ -49,20 +44,22 @@ class StreamStudioInstance extends InstanceBase<Config> {
     // GETTING JSON API DEFINITION
     private getApiDefinition = (): Promise<ApiDefinition> => {
         this.log("debug", "Fetching JSON API definition...");
-        return new Promise((resolve, reject) => {
-            const req = request(JSON_API_DEFINITION_URL, (res) => {
-                res.on("data", (data) => {
-                    const json: ApiDefinition = JSON.parse(data);
-                    resolve(json);
-                });
-            });
+        return new Promise((resolve, _reject) => {
+            // To be uncommented when we start hosting JSON api definition
+            // const req = request(JSON_API_DEFINITION_URL, (res) => {
+            //     res.on("data", (data) => {
+            //         const json: ApiDefinition = JSON.parse(data);
+            //         resolve(json);
+            //     });
+            // });
 
-            req.on("error", (e) => {
-                this.log("debug", `Failed to fetch JSON API definition: ${e.message}`);
-                reject();
-            });
+            // req.on("error", (e) => {
+            //     this.log("debug", `Failed to fetch JSON API definition: ${e.message}`);
+            //     reject();
+            // });
 
-            req.end();
+            // req.end();
+            resolve(apiDefinitions as ApiDefinition);
         });
     };
 
@@ -82,7 +79,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
             switch (status) {
                 case WebSocketStatus.OPEN:
                     this.updateStatus(InstanceStatus.Ok);
-                    this.getCommandsTemplates();
+                    this.updateActions();
                     break;
                 case WebSocketStatus.CONNECTING:
                     this.updateStatus(InstanceStatus.Connecting);
@@ -102,20 +99,14 @@ class StreamStudioInstance extends InstanceBase<Config> {
         this.ws.addListener(WebSocketEventType.MESSAGE, (message: WebSocketMessage) => {
             const messageId = message["message-id"];
             switch (messageId) {
-                case WebSocketMessageId.GET_COMMANDS_TEMPLATES_MSG_ID: {
-                    const typedMessage = message as CommandsTemplatesWSMessage;
-                    this.log("debug", `Got ${typedMessage.templatesGroups.length} command groups.`);
-                    this.commandsTemplates = typedMessage.templatesGroups;
-                    this.updateActions();
-                    this.updateFeedbacks();
-                    break;
-                }
                 case WebSocketMessageId.GET_PARAM_OPTIONS_MSG_ID: {
                     const typedMessage = message as ParameterOptionsWSMessage;
+                    // To be removed when gateway stops sending 2 responses for one request
+                    if (!typedMessage.requestType) return;
                     this.activeOptionsCalls--;
-                    const topic = getParameterTopic(typedMessage.command, typedMessage.parameter);
+                    const topic = getParameterTopic(typedMessage.requestType, typedMessage.parameterName);
                     this.options[topic] = typedMessage.options;
-                    this.log("debug", `Got options for ${topic}`);
+                    this.log("debug", `Got options for ${topic}. Active options calls: ${this.activeOptionsCalls}`);
                     if (this.activeOptionsCalls === 0) {
                         this.log("debug", `All options calls finished, updating actions.`);
                         this.updateActions();
@@ -183,7 +174,6 @@ class StreamStudioInstance extends InstanceBase<Config> {
     public async destroy(): Promise<void> {
         this.stopReconnecting();
         this.ws.disconnect();
-        this.commandsTemplates = [];
         this.options = {};
         this.activeOptionsCalls = 0;
         this.listenedUpdates = [];
@@ -241,19 +231,12 @@ class StreamStudioInstance extends InstanceBase<Config> {
 
     // SENDING REQUESTS
 
-    private getCommandsTemplates = () => {
+    public getOptions = (requestType: string, parameterName: string) => {
         this.ws.send({
-            "request-type": "GetCommandsTemplates",
-            "message-id": WebSocketMessageId.GET_COMMANDS_TEMPLATES_MSG_ID,
-        });
-    };
-
-    public getOptions = (commandId: string, paramId: string) => {
-        this.ws.send({
-            "request-type": "GetOptions",
+            "request-type": "commands.parameter.options.get",
             "message-id": WebSocketMessageId.GET_PARAM_OPTIONS_MSG_ID,
-            commandId,
-            paramId,
+            requestType,
+            parameterName,
         });
         this.activeOptionsCalls++;
     };
@@ -285,7 +268,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
     // COMPANION FUNCTION WRAPPERS
 
     private updateActions = () => {
-        this.setActionDefinitions(generateActions(this.commandsTemplates, this));
+        this.setActionDefinitions(generateActions(this));
     };
 
     private updateFeedbacks = () => {
