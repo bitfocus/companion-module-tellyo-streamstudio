@@ -1,4 +1,4 @@
-import { ComandTemplateGroup, CommandParameterOption } from "./commandsTemplates";
+import { Option } from "./options";
 
 export enum WebSocketMessageId {
     GET_COMMANDS_TEMPLATES_MSG_ID = "commands_templates",
@@ -13,14 +13,10 @@ export interface WebSocketMessage {
     "message-id"?: WebSocketMessageId;
 }
 
-export interface CommandsTemplatesWSMessage extends WebSocketMessage {
-    templatesGroups: ComandTemplateGroup[];
-}
-
 export interface ParameterOptionsWSMessage extends WebSocketMessage {
-    command: string;
-    parameter: string;
-    options: CommandParameterOption[];
+    requestType: string;
+    parameterName: string;
+    options: Option[];
 }
 
 export interface UpdateWSMessage extends WebSocketMessage {

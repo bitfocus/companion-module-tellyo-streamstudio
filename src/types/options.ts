@@ -1,5 +1,8 @@
-import { CommandParameterOption } from "./commandsTemplates";
+export interface Option {
+    id: string;
+    value: string;
+}
 
 export interface Options {
-    [id: string]: CommandParameterOption[];
+    [id: string]: Option[];
 }
