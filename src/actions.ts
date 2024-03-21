@@ -2,6 +2,7 @@ import {
     CompanionActionDefinition,
     CompanionActionDefinitions,
     CompanionActionEvent,
+    CompanionActionInfo,
     CompanionInputFieldCheckbox,
     CompanionInputFieldDropdown,
     CompanionInputFieldNumber,
@@ -182,29 +183,48 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
 
             const setRequest = group.requests.find((request) => request.method === RequestMethod.SET);
             if (!setRequest) return;
+            const getRequest = group.requests.find((request) => request.method === RequestMethod.GET);
+            let hasBooleanControllableParam = false;
 
             const options: SomeCompanionActionInputField[] = [];
             setRequest.requestParams.forEach((param) => {
                 if (param.type === ParameterType.CONST) return;
-                if (param.property === ParameterProperty.CONTROLLABLE && param.type === ParameterType.BOOLEAN) return;
+                if (
+                    [ParameterProperty.CONTROLLABLE, ParameterProperty.REQUIRED].includes(param.property) &&
+                    param.type === ParameterType.BOOLEAN
+                ) {
+                    hasBooleanControllableParam = true;
+                    return;
+                }
                 options.push(getInput(param, setRequest, ssInstance));
             });
+
+            if (hasBooleanControllableParam && !getRequest) {
+                return;
+            }
 
             const action: CompanionActionDefinition = {
                 name: `${groupName}: ${setRequest.prettyName}`,
                 options: options,
                 callback: getCallback(setRequest, ssInstance),
-                subscribe: () => {
+                subscribe: (action: CompanionActionInfo) => {
                     setRequest.requestParams.forEach((param) => {
-                        // jak jest boolean controllable
-                        // get and save value
-                        // listen for notifications
+                        if (
+                            param.type === ParameterType.BOOLEAN &&
+                            [ParameterProperty.CONTROLLABLE, ParameterProperty.REQUIRED].includes(param.property) &&
+                            getRequest
+                        ) {
+                            ssInstance.addAwaitedRequest(getRequest.type, action.id, action.options);
+                            // subskrybowanie notyfikacji
+                        }
 
                         if (COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET.includes(param.type)) return;
                         ssInstance.getOptions(setRequest.type, param.id);
                     });
                 },
                 unsubscribe: () => {
+                    // usuń awaited request w sumie też
+                    // usuń zapis z state'u
                     //stop listening for notification jak jest boolean controllable
                 },
             };

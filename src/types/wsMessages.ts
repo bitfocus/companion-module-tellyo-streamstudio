@@ -10,13 +10,18 @@ export enum WebSocketUpdateTypes {
 }
 
 export interface WebSocketMessage {
-    "message-id"?: WebSocketMessageId;
+    "message-id"?: WebSocketMessageId | string;
 }
 
 export interface ParameterOptionsWSMessage extends WebSocketMessage {
     requestType: string;
     parameterName: string;
     options: Option[];
+}
+
+export interface RequestWSMessage extends WebSocketMessage {
+    "request-type": string;
+    [key: string]: string | boolean | number | undefined | object;
 }
 
 export interface UpdateWSMessage extends WebSocketMessage {

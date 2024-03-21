@@ -16,7 +16,6 @@ import { ListenedUpdate } from "./types/updates";
 import { ApiDefinition } from "./types/apiDefinition";
 import { GenericObject, Request } from "./types/requests";
 import { generateMessageId } from "./utils";
-import { processRequest } from "./requests";
 import { processUpdate } from "./updates";
 import { generatePresets } from "./presets";
 // import { request } from "https";
@@ -140,7 +139,6 @@ class StreamStudioInstance extends InstanceBase<Config> {
                     break;
                 }
                 default: {
-                    const messageId = message["message-id"];
                     const awaitedRequest = this.awaitedRequests.find((request) => request.messageId === messageId);
                     if (awaitedRequest) {
                         const typedMessage = message as UpdateWSMessage;
@@ -217,11 +215,9 @@ class StreamStudioInstance extends InstanceBase<Config> {
 
     // REQUESTS
 
-    public addAwaitedRequest = (requestType: string, args?: GenericObject) => {
-        const existingRequest = this.awaitedRequests.find((request) => request.requestType === requestType);
-        if (existingRequest && typeof args === "undefined") return;
+    public addAwaitedRequest = (requestType: string, actionId: string, args?: GenericObject) => {
         const messageId = generateMessageId();
-        this.awaitedRequests.push({ messageId, requestType });
+        this.awaitedRequests.push({ messageId, requestType, actionId });
         this.sendRequest(requestType, messageId, args);
     };
 

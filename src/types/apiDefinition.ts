@@ -45,7 +45,6 @@ export enum ParameterProperty {
     CONTROLLABLE = "controllable",
     REQUIRED = "required",
     OPTIONAL = "optional",
-    READ_ONLY_CONTROLLABLE = "read_only_controllable",
 }
 
 export enum ParameterType {
