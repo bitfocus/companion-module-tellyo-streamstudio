@@ -1,5 +1,5 @@
+import { ParameterType } from "studio-api-client";
 import { v4 as uuidv4 } from "uuid";
-import { ParameterType } from "./types/apiDefinition";
 
 export const transformDotCaseToTitleCase = (text: string) => {
     return text
@@ -10,11 +10,11 @@ export const transformDotCaseToTitleCase = (text: string) => {
 
 export const commandParameterTypeToInputType = (type: ParameterType) => {
     switch (type) {
-        case ParameterType.NUMBER:
+        case "number":
             return "number";
-        case ParameterType.BOOLEAN:
+        case "boolean":
             return "checkbox";
-        case ParameterType.STRING:
+        case "string":
             return "textinput";
         default:
             return "dropdown";
@@ -62,4 +62,9 @@ export const getValueAtPath = (obj: any, path: string) => {
         current = current[key];
     }
     return;
+};
+
+export const getRequestMethod = (requestType: string) => {
+    const parts = requestType.split(".");
+    return parts[parts.length - 1];
 };

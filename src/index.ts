@@ -1,160 +1,68 @@
-import { InstanceBase, InstanceStatus, SomeCompanionConfigField, runEntrypoint } from "@companion-module/base";
-import { Config, getConfigFields } from "./config";
-import WebSocketInstance, { WebSocketEventType, WebSocketStatus } from "./ws";
 import {
-    GatewayConnectionWSMessage,
-    ParameterOptionsWSMessage,
-    UpdateWSMessage,
-    WebSocketMessage,
-    WebSocketMessageId,
-    WebSocketUpdateTypes,
-} from "./types/wsMessages";
-import { Options } from "./types/options";
+    CompanionOptionValues,
+    InputValue,
+    InstanceBase,
+    InstanceStatus,
+    SomeCompanionConfigField,
+    runEntrypoint,
+} from "@companion-module/base";
+import { Config, getConfigFields } from "./config";
+import { Option, Options } from "./types/options";
 import generateActions, { getParameterTopic } from "./actions";
 import generateFeedbacks from "./feedbacks";
-import { ListenedUpdate } from "./types/updates";
+import { ListenedUpdates } from "./types/updates";
 import { ApiDefinition } from "./types/apiDefinition";
-import { GenericObject, Request } from "./types/requests";
-import { generateMessageId } from "./utils";
-import { processUpdate } from "./updates";
 import { generatePresets } from "./presets";
-// import { request } from "https";
-import apiDefinitions from "./apiDefinitions.json";
+import { CompanionControlType, State } from "./types/stateStore";
+import { getAPIDefinition, NotificationTypes, Request, StreamStudioClient } from "studio-api-client";
 
-const RECONNECT_TIMEOUT_IN_MS = 1000;
-// const JSON_API_DEFINITION_URL = "https://support.oneskyapp.com/hc/en-us/article_attachments/202761627";
+const RECONNECT_INTERVAL_IN_MS = 2000;
 
 class StreamStudioInstance extends InstanceBase<Config> {
-    private ws = new WebSocketInstance(this, true);
     public options: Options = {};
     public apiDefinition: ApiDefinition | null = null;
-    private activeOptionsCalls = 0;
-    private listenedUpdates: ListenedUpdate[] = [];
-    private awaitedRequests: Request[] = [];
+    private activeRequests = 0;
+    private listenedUpdates: ListenedUpdates = {};
     public config: Config = {
         ip: "",
         port: 0,
     };
+    public client: StreamStudioClient;
+    private reconnectTimeout: NodeJS.Timeout | null = null;
+    public state: State = {};
 
     constructor(internal: unknown) {
         super(internal);
+        this.client = new StreamStudioClient("companion-module");
     }
-
-    // GETTING JSON API DEFINITION
-    private getApiDefinition = (): Promise<ApiDefinition> => {
-        this.log("debug", "Fetching JSON API definition...");
-        return new Promise((resolve, _reject) => {
-            // To be uncommented when we start hosting JSON api definition
-            // const req = request(JSON_API_DEFINITION_URL, (res) => {
-            //     res.on("data", (data) => {
-            //         const json: ApiDefinition = JSON.parse(data);
-            //         resolve(json);
-            //     });
-            // });
-
-            // req.on("error", (e) => {
-            //     this.log("debug", `Failed to fetch JSON API definition: ${e.message}`);
-            //     reject();
-            // });
-
-            // req.end();
-            resolve(apiDefinitions as ApiDefinition);
-        });
-    };
 
     // COMPANION METHODS
     public async init(config: Config): Promise<void> {
         this.config = config;
 
+        this.client.on("gateway-connection" as NotificationTypes, this.onConnection);
+        this.client.onws("closed", this.startReconnecting);
+        this.client.onws("error", (e) => {
+            this.log("error", JSON.stringify(e));
+        });
+
         try {
-            this.apiDefinition = await this.getApiDefinition();
+            this.apiDefinition = getAPIDefinition();
         } catch (e) {
             this.updateStatus(InstanceStatus.ConnectionFailure);
             return;
         }
 
-        this.ws.addListener(WebSocketEventType.STATUS_CHANGED, (status: WebSocketStatus) => {
-            this.log("debug", `WebSocket status changed to ${status}`);
-            switch (status) {
-                case WebSocketStatus.OPEN:
-                    this.updateStatus(InstanceStatus.Ok);
-                    this.updateActions();
-                    break;
-                case WebSocketStatus.CONNECTING:
-                    this.updateStatus(InstanceStatus.Connecting);
-                    break;
-                case WebSocketStatus.CLOSED:
-                    this.startReconnecting();
-                    break;
-                case WebSocketStatus.CLOSING:
-                    this.updateStatus(InstanceStatus.Disconnected);
-                    break;
-                case WebSocketStatus.ERROR:
-                    this.updateStatus(InstanceStatus.ConnectionFailure);
-                    break;
-            }
-        });
-
-        this.ws.addListener(WebSocketEventType.MESSAGE, (message: WebSocketMessage) => {
-            const messageId = message["message-id"];
-            switch (messageId) {
-                case WebSocketMessageId.GET_PARAM_OPTIONS_MSG_ID: {
-                    const typedMessage = message as ParameterOptionsWSMessage;
-                    // To be removed when gateway stops sending 2 responses for one request
-                    if (!typedMessage.requestType) return;
-                    this.activeOptionsCalls--;
-                    const topic = getParameterTopic(typedMessage.requestType, typedMessage.parameterName);
-                    this.options[topic] = typedMessage.options;
-                    this.log("debug", `Got options for ${topic}. Active options calls: ${this.activeOptionsCalls}`);
-                    if (this.activeOptionsCalls === 0) {
-                        this.log("debug", `All options calls finished, updating actions.`);
-                        this.updateActions();
-                        this.updateFeedbacks();
-                    }
-                    break;
-                }
-                case undefined: {
-                    const typedMessage = message as UpdateWSMessage;
-                    const updateType = typedMessage["update-type"];
-                    if (typeof updateType === "undefined") return;
-                    if (updateType === WebSocketUpdateTypes.GATEWAY_CONNECTION) {
-                        const typedMessage = message as GatewayConnectionWSMessage;
-                        if (typedMessage.connected) {
-                            this.cancelUnnecessaryNotifications();
-                            this.subscribeActions();
-                            this.subscribeFeedbacks();
-                            this.setPresetDefinitions(generatePresets());
-                            return;
-                        }
-                        if (!typedMessage.connected) {
-                            this.updateStatus(InstanceStatus.ConnectionFailure, "Connection to producer lost.");
-                        }
-                    }
-                    const listenedUpdates = Array.from(
-                        new Set(this.listenedUpdates.map((update) => update.updateType))
-                    );
-                    if (listenedUpdates.includes(updateType)) {
-                        processUpdate(typedMessage, this);
-                    }
-                    break;
-                }
-                default: {
-                    const awaitedRequest = this.awaitedRequests.find((request) => request.messageId === messageId);
-                    if (awaitedRequest) {
-                        const typedMessage = message as UpdateWSMessage;
-                        processRequest(typedMessage, awaitedRequest.requestType, this);
-                        this.removeAwaitedRequest(messageId as string);
-                    }
-                }
-            }
-        });
-
-        this.connectToWsServer();
+        try {
+            await this.connectToWsServer();
+        } catch (e) {
+            this.updateStatus(InstanceStatus.ConnectionFailure);
+        }
     }
 
     public async configUpdated(config: Config): Promise<void> {
         this.config = config;
-        this.ws.disconnect();
+        this.client.disconnect();
         this.stopReconnecting();
 
         if (!config.ip || !config.port) {
@@ -170,95 +78,184 @@ class StreamStudioInstance extends InstanceBase<Config> {
     }
 
     public async destroy(): Promise<void> {
+        this.log("debug", "Destroying...");
         this.stopReconnecting();
-        this.ws.disconnect();
+        this.removeAllUpdateListeners();
+        this.client.disconnect();
         this.options = {};
-        this.activeOptionsCalls = 0;
-        this.listenedUpdates = [];
-        this.awaitedRequests = [];
+        this.activeRequests = 0;
+        this.state = {};
     }
 
-    // AUTO-RECONNECTING
-    private reconnectTimer: NodeJS.Timer | null = null;
-
-    private connectToWsServer = () => {
-        const { ip, port } = this.config;
-        this.log("debug", `Connecting to ${ip} at port ${port}.`);
-        this.ws.connect(ip, port);
+    // ACTIONS / FEEDBACKS / PRESETS MANAGEMENT
+    private onConnection = () => {
+        this.log("debug", "Connected.");
+        this.updateStatus(InstanceStatus.Ok);
+        this.refreshAll();
+        this.subscribeActions();
+        this.subscribeFeedbacks();
     };
 
-    private startReconnecting = () => {
-        this.updateStatus(InstanceStatus.Disconnected, "Trying to reconnect");
-        this.reconnectTimer = setTimeout(() => {
+    private refreshAll = () => {
+        this.updateActions();
+        this.updateFeedbacks();
+        generatePresets();
+    };
+
+    // AUTO-RECONNECTING
+    private connectToWsServer = async () => {
+        this.updateStatus(InstanceStatus.Connecting);
+        const { ip, port } = this.config;
+        this.log("debug", `Connecting to ${ip} at port ${port}.`);
+        return this.client.connect(`ws://${ip}:${port}`);
+    };
+
+    private startReconnecting = async () => {
+        this.reconnectTimeout = setTimeout(async () => {
             this.log("debug", `Reconnecting...`);
-            this.connectToWsServer();
-            this.reconnectTimer = null;
-        }, RECONNECT_TIMEOUT_IN_MS);
+            this.updateStatus(InstanceStatus.Disconnected, "Trying to reconnect");
+            try {
+                await this.connectToWsServer();
+            } catch (e) {
+                this.log("error", JSON.stringify(e));
+                return;
+            }
+        }, RECONNECT_INTERVAL_IN_MS);
     };
 
     private stopReconnecting = () => {
-        if (this.reconnectTimer !== null) {
-            clearTimeout(this.reconnectTimer);
-            this.reconnectTimer = null;
-        }
+        if (this.reconnectTimeout === null) return;
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = null;
     };
 
     // UPDATES
+    private handleUpdate = (notification: any) => {
+        const updateType = notification["update-type"];
+        this.log("debug", "got update");
+        this.log("debug", JSON.stringify(notification));
+        const feedbacksToUpdate: Set<string> = new Set();
+        Object.values(this.state).forEach((stateEntry) => {
+            if (updateType !== stateEntry.requestType) return;
+            const isEveryParamMatching = Object.entries(stateEntry.paramValues).every((entry) => {
+                const [paramId, value] = entry;
+                return notification[paramId] === value;
+            });
+            if (!isEveryParamMatching) return;
 
-    public addListenedUpdate = (newUpdate: ListenedUpdate) => {
-        this.listenedUpdates.push(newUpdate);
+            stateEntry.value = notification[stateEntry.paramId];
+
+            if (stateEntry.controlType === CompanionControlType.FEEDBACK) feedbacksToUpdate.add(stateEntry.companionId);
+        });
+
+        this.checkFeedbacksById(...feedbacksToUpdate);
     };
 
-    public removeListenedUpdate = (feedbackId: string) => {
-        this.listenedUpdates = this.listenedUpdates.filter((update) => update.feedbackId !== feedbackId);
+    public addListenedUpdate = (updateType: NotificationTypes, companionControlId: string) => {
+        if (!Object.values(this.listenedUpdates).includes(updateType)) {
+            this.log("debug", `Subscribing notification: ${updateType}`);
+            this.client.on(updateType, this.handleUpdate);
+        }
+        this.listenedUpdates[companionControlId] = updateType;
+    };
+
+    public removeListenedUpdate = (companionControlId: string) => {
+        const updateType = this.listenedUpdates[companionControlId];
+        delete this.listenedUpdates[companionControlId];
+        const isUpdateListened = Object.values(this.listenedUpdates).some((update) => update === updateType);
+        if (!isUpdateListened) this.client.off(updateType, this.handleUpdate);
+    };
+
+    private removeAllUpdateListeners = () => {
+        Object.keys(this.listenedUpdates).forEach(this.removeListenedUpdate);
     };
 
     // REQUESTS
-
-    public addAwaitedRequest = (requestType: string, actionId: string, args?: GenericObject) => {
-        const messageId = generateMessageId();
-        this.awaitedRequests.push({ messageId, requestType, actionId });
-        this.sendRequest(requestType, messageId, args);
+    public sendValueRequest = (
+        message: Request,
+        companionControlId: string,
+        companionId: string,
+        paramId: string,
+        paramValues: CompanionOptionValues,
+        controlType: CompanionControlType
+    ) => {
+        this.activeRequests++;
+        this.log("debug", "request");
+        this.log("debug", JSON.stringify(message));
+        this.client
+            .send(message)
+            .then((res) => {
+                this.log("debug", "got value request response");
+                this.log("debug", JSON.stringify(res));
+                this.state[companionControlId] = {
+                    requestType: message["request-type"],
+                    paramId,
+                    paramValues,
+                    value: (res as any)[paramId] as InputValue,
+                    companionId,
+                    controlType,
+                };
+                this.log("debug", `settings state value: ${(res as any)[paramId]}`);
+            })
+            .catch((e) => {
+                this.log("error", JSON.stringify(e));
+            })
+            .finally(() => {
+                this.activeRequests--;
+                if (this.activeRequests === 0) {
+                    this.refreshAll();
+                }
+            });
     };
-
-    public removeAwaitedRequest = (messageId: string) => {
-        this.awaitedRequests = this.awaitedRequests.filter((confirmation) => confirmation.messageId !== messageId);
-    };
-
-    // SENDING REQUESTS
 
     public getOptions = (requestType: string, parameterName: string) => {
-        this.ws.send({
-            "request-type": "commands.parameter.options.get",
-            "message-id": WebSocketMessageId.GET_PARAM_OPTIONS_MSG_ID,
-            requestType,
-            parameterName,
-        });
-        this.activeOptionsCalls++;
+        this.log("debug", JSON.stringify({ requestType, parameterName }));
+        this.activeRequests++;
+        this.client
+            .send({
+                "request-type": "commands.parameter.options.get",
+                requestType,
+                parameterName,
+            })
+            .then((res) => {
+                this.log("debug", JSON.stringify(res));
+                const options = (res as any)["options"] as Option[];
+                const topic = getParameterTopic(requestType, parameterName);
+                this.options[topic] = options;
+            })
+            .catch((e) => {
+                this.log("error", JSON.stringify(e));
+            })
+            .finally(() => {
+                this.activeRequests--;
+                if (this.activeRequests === 0) {
+                    this.refreshAll();
+                }
+            });
+    };
+
+    public sendRequest = async (message: Request) => {
+        this.log("debug", "sending message");
+        this.log("debug", JSON.stringify(message));
+        try {
+            this.client.send(message);
+        } catch (e) {
+            this.log("error", JSON.stringify(e));
+        }
     };
 
     // WEBSOCKET COMMUNICATION WRAPPERS
-
-    public sendByWs = (message: any) => {
-        this.ws.send(message);
-    };
-
-    public sendRequest = (type: string, messageId: string, args?: GenericObject) => {
-        this.ws.send({ "request-type": type, "message-id": messageId, ...args });
-    };
-
     private cancelUnnecessaryNotifications = () => {
         // can't cancel MediaProgressNotify, because it keeps the connection alive
         // can't cancel ProjectStateNotify, because respone to GetLatestProject has the same topic
-        const notificationsToCancel: string[] = [];
-
-        notificationsToCancel.forEach((notification) => {
-            this.ws.send({
-                "request-type": "TurnNotificationOff",
-                "message-id": generateMessageId(),
-                notyficationType: notification,
-            });
-        }, this);
+        // const notificationsToCancel: string[] = [];
+        // notificationsToCancel.forEach((notification) => {
+        //     this.ws.send({
+        //         "request-type": "TurnNotificationOff",
+        //         "message-id": generateMessageId(),
+        //         notyficationType: notification,
+        //     });
+        // }, this);
     };
 
     // COMPANION FUNCTION WRAPPERS
