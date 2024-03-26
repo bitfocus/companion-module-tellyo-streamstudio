@@ -196,7 +196,6 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
             const getRequestType = `${requestType.substring(0, requestType.length - 3)}get`;
 
             const getRequest = group.requests.find((request) => request.requestType === getRequestType);
-            if (!getRequest) return;
 
             const action: CompanionActionDefinition = {
                 name: `${group.name}: ${request.pretty_name}`,
@@ -207,6 +206,13 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                     request?.requestParams?.forEach((param) => {
                         ssInstance.log("debug", JSON.stringify(action.options));
                         if (param.type === "boolean" && ["controllable", "required"].includes(param.property)) {
+                            if (!getRequest) {
+                                ssInstance.log(
+                                    "error",
+                                    `Request ${request.requestType} has boolean controllable param, but no get request.`
+                                );
+                                return;
+                            }
                             // Add state entry
                             ssInstance.actionsState[action.controlId] = {
                                 requestType: request.requestType,
