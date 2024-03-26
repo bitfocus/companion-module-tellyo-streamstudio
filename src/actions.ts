@@ -123,8 +123,6 @@ const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstanc
         };
 
         let requiredParamNotSet = false;
-        ssInstance.log("debug", "state");
-        ssInstance.log("debug", JSON.stringify(ssInstance.actionsState));
 
         request?.requestParams?.forEach((param) => {
             const { id, type, property, defaultValue } = param;
@@ -202,9 +200,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                 options: options,
                 callback: getCallback(request, ssInstance),
                 subscribe: (action: CompanionActionInfo) => {
-                    ssInstance.log("debug", JSON.stringify(getRequest));
                     request?.requestParams?.forEach((param) => {
-                        ssInstance.log("debug", JSON.stringify(action.options));
                         if (param.type === "boolean" && ["controllable", "required"].includes(param.property)) {
                             if (!getRequest) {
                                 ssInstance.log(
@@ -227,8 +223,6 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                             };
                             let areAllParametersSet = true;
                             request.requestParams?.forEach((param) => {
-                                ssInstance.log("debug", `${param.id}: ${action.options[param.id]}`);
-
                                 const value = action.options[param.id] as InputValue;
                                 if (value === DEFAULT_CHOICE_ID) areAllParametersSet = false;
                                 message[param.id] = value;
@@ -238,9 +232,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                                 ssInstance.sendValueRequest(
                                     message as Request,
                                     action.controlId,
-                                    action.actionId,
                                     param.id,
-                                    action.options,
                                     CompanionControlType.ACTION
                                 );
                             }

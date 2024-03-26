@@ -1,5 +1,4 @@
 import {
-    CompanionOptionValues,
     InputValue,
     InstanceBase,
     InstanceStatus,
@@ -135,10 +134,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
     // UPDATES
     private handleUpdate = (notification: any) => {
         const updateType = notification["update-type"];
-        this.log("debug", "got update");
-        this.log("debug", JSON.stringify(notification));
-        this.log("debug", "feedbacks state");
-        this.log("debug", JSON.stringify(this.feedbacksState));
+        this.log("debug", `Got update: ${JSON.stringify(notification)}`);
         const feedbacksToUpdate: Set<string> = new Set();
         Object.values(this.actionsState).forEach((stateEntry) => {
             if (updateType !== stateEntry.requestType) return;
@@ -163,8 +159,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
 
             feedbacksToUpdate.add(stateEntry.companionInstanceId);
         });
-        this.log("debug", "feedbacks to ");
-        this.log("debug", JSON.stringify(Array.from(feedbacksToUpdate)));
+        this.log("debug", `Updating feedbacks: ${JSON.stringify(Array.from(feedbacksToUpdate))}`);
 
         this.checkFeedbacksById(...Array.from(feedbacksToUpdate));
     };
@@ -192,24 +187,19 @@ class StreamStudioInstance extends InstanceBase<Config> {
     public sendValueRequest = (
         message: Request,
         companionControlId: string,
-        companionId: string,
         paramId: string,
-        paramValues: CompanionOptionValues,
         controlType: CompanionControlType
     ) => {
         this.activeRequests++;
-        this.log("debug", "request");
-        this.log("debug", JSON.stringify(message));
+        this.log("debug", `Sending value request: ${JSON.stringify(message)}`);
         this.client
             .send(message)
             .then((res) => {
-                this.log("debug", "got value request response");
-                this.log("debug", JSON.stringify(res));
+                this.log("debug", `Got value request response: ${JSON.stringify(res)}`);
                 const value = (res as any)[paramId] as InputValue;
                 if (controlType === CompanionControlType.ACTION) this.actionsState[companionControlId].value = value;
                 if (controlType === CompanionControlType.FEEDBACK)
                     this.feedbacksState[companionControlId].value = value;
-                this.log("debug", `settings state value: ${(res as any)[paramId]}`);
             })
             .catch((e) => {
                 this.log("error", JSON.stringify(e));
@@ -223,14 +213,15 @@ class StreamStudioInstance extends InstanceBase<Config> {
     };
 
     public getOptions = (requestType: string, parameterName: string) => {
-        this.log("debug", JSON.stringify({ requestType, parameterName }));
+        const request: Request = {
+            "request-type": "commands.parameter.options.get",
+            requestType,
+            parameterName,
+        };
+        this.log("debug", `Sending options request: ${JSON.stringify(request)}`);
         this.activeRequests++;
         this.client
-            .send({
-                "request-type": "commands.parameter.options.get",
-                requestType,
-                parameterName,
-            })
+            .send(request)
             .then((res) => {
                 this.log("debug", JSON.stringify(res));
                 const options = (res as any)["options"] as Option[];
@@ -249,8 +240,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
     };
 
     public sendRequest = async (message: Request) => {
-        this.log("debug", "sending message");
-        this.log("debug", JSON.stringify(message));
+        this.log("debug", `Sending request: ${JSON.stringify(message)}`);
         try {
             this.client.send(message);
         } catch (e) {
