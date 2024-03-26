@@ -13,7 +13,7 @@ import generateFeedbacks from "./feedbacks";
 import { ListenedUpdates } from "./types/updates";
 import { ApiDefinition } from "./types/apiDefinition";
 import { generatePresets } from "./presets";
-import { CompanionControlType, State } from "./types/stateStore";
+import { CompanionControlType, ActionsState, FeedbacksState } from "./types/stateStore";
 import { getAPIDefinition, NotificationTypes, Request, StreamStudioClient } from "studio-api-client";
 
 const RECONNECT_INTERVAL_IN_MS = 2000;
@@ -29,8 +29,8 @@ class StreamStudioInstance extends InstanceBase<Config> {
     };
     public client: StreamStudioClient;
     private reconnectTimeout: NodeJS.Timeout | null = null;
-    public actionsState: State = {};
-    public feedbacksState: State = {};
+    public actionsState: ActionsState = {};
+    public feedbacksState: FeedbacksState = {};
 
     constructor(internal: unknown) {
         super(internal);
@@ -151,10 +151,10 @@ class StreamStudioInstance extends InstanceBase<Config> {
             stateEntry.value = notification[stateEntry.paramId];
         });
         Object.values(this.feedbacksState).forEach((stateEntry) => {
-            if (updateType !== stateEntry.requestType) return;
-            const isEveryParamMatching = Object.entries(stateEntry.paramValues).every((entry) => {
-                const [paramId, value] = entry;
-                return notification[paramId] === value;
+            const setRequestType = `${stateEntry.requestType.substring(0, stateEntry.requestType.length - 3)}set`;
+            if (updateType !== setRequestType) return;
+            const isEveryParamMatching = stateEntry.requestParamsIds.every((paramId) => {
+                return notification[paramId] === stateEntry.paramValues[paramId];
             });
 
             if (!isEveryParamMatching) return;

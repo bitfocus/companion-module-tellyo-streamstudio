@@ -219,7 +219,6 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                                 paramId: param.id,
                                 value: DEFAULT_CHOICE_ID,
                                 paramValues: action.options,
-                                companionInstanceId: action.id,
                             };
 
                             // Get initial value
