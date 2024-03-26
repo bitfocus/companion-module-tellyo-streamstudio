@@ -13,6 +13,5 @@ export interface StateEntry {
     paramId: string;
     value: InputValue;
     paramValues: CompanionOptionValues;
-    companionId: string;
-    controlType: CompanionControlType;
+    companionInstanceId: string;
 }

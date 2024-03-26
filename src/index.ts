@@ -29,7 +29,8 @@ class StreamStudioInstance extends InstanceBase<Config> {
     };
     public client: StreamStudioClient;
     private reconnectTimeout: NodeJS.Timeout | null = null;
-    public state: State = {};
+    public actionsState: State = {};
+    public feedbacksState: State = {};
 
     constructor(internal: unknown) {
         super(internal);
@@ -84,7 +85,8 @@ class StreamStudioInstance extends InstanceBase<Config> {
         this.client.disconnect();
         this.options = {};
         this.activeRequests = 0;
-        this.state = {};
+        this.actionsState = {};
+        this.feedbacksState = {};
     }
 
     // ACTIONS / FEEDBACKS / PRESETS MANAGEMENT
@@ -99,6 +101,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
     private refreshAll = () => {
         this.updateActions();
         this.updateFeedbacks();
+        this.checkFeedbacks();
         generatePresets();
     };
 
@@ -134,8 +137,10 @@ class StreamStudioInstance extends InstanceBase<Config> {
         const updateType = notification["update-type"];
         this.log("debug", "got update");
         this.log("debug", JSON.stringify(notification));
+        this.log("debug", "feedbacks state");
+        this.log("debug", JSON.stringify(this.feedbacksState));
         const feedbacksToUpdate: Set<string> = new Set();
-        Object.values(this.state).forEach((stateEntry) => {
+        Object.values(this.actionsState).forEach((stateEntry) => {
             if (updateType !== stateEntry.requestType) return;
             const isEveryParamMatching = Object.entries(stateEntry.paramValues).every((entry) => {
                 const [paramId, value] = entry;
@@ -144,11 +149,24 @@ class StreamStudioInstance extends InstanceBase<Config> {
             if (!isEveryParamMatching) return;
 
             stateEntry.value = notification[stateEntry.paramId];
-
-            if (stateEntry.controlType === CompanionControlType.FEEDBACK) feedbacksToUpdate.add(stateEntry.companionId);
         });
+        Object.values(this.feedbacksState).forEach((stateEntry) => {
+            if (updateType !== stateEntry.requestType) return;
+            const isEveryParamMatching = Object.entries(stateEntry.paramValues).every((entry) => {
+                const [paramId, value] = entry;
+                return notification[paramId] === value;
+            });
 
-        this.checkFeedbacksById(...feedbacksToUpdate);
+            if (!isEveryParamMatching) return;
+
+            stateEntry.value = notification[stateEntry.paramId];
+
+            feedbacksToUpdate.add(stateEntry.companionInstanceId);
+        });
+        this.log("debug", "feedbacks to ");
+        this.log("debug", JSON.stringify(Array.from(feedbacksToUpdate)));
+
+        this.checkFeedbacksById(...Array.from(feedbacksToUpdate));
     };
 
     public addListenedUpdate = (updateType: NotificationTypes, companionControlId: string) => {
@@ -187,14 +205,10 @@ class StreamStudioInstance extends InstanceBase<Config> {
             .then((res) => {
                 this.log("debug", "got value request response");
                 this.log("debug", JSON.stringify(res));
-                this.state[companionControlId] = {
-                    requestType: message["request-type"],
-                    paramId,
-                    paramValues,
-                    value: (res as any)[paramId] as InputValue,
-                    companionId,
-                    controlType,
-                };
+                const value = (res as any)[paramId] as InputValue;
+                if (controlType === CompanionControlType.ACTION) this.actionsState[companionControlId].value = value;
+                if (controlType === CompanionControlType.FEEDBACK)
+                    this.feedbacksState[companionControlId].value = value;
                 this.log("debug", `settings state value: ${(res as any)[paramId]}`);
             })
             .catch((e) => {

@@ -13,15 +13,11 @@ import {
 } from "@companion-module/base";
 import { commandParameterTypeToInputType, getRequestMethod, transformDotCaseToTitleCase } from "./utils";
 import StreamStudioInstance from "./index";
-import { Option, Options } from "./types/options";
-import { RequestMethod } from "./types/apiDefinition";
-import { NotificationTypes, ParameterType, Request, RequestDefinition, RequestParameter } from "studio-api-client";
+import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET, Option, Options } from "./types/options";
+import { GROUPS_TO_SKIP, RequestMethod } from "./types/apiDefinition";
+import { NotificationTypes, Request, RequestDefinition, RequestParameter } from "studio-api-client";
 import { CompanionCommonCallbackContext } from "@companion-module/base/dist/module-api/common";
 import { CompanionControlType } from "./types/stateStore";
-
-const GROUPS_TO_SKIP = ["frontend"];
-
-const COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET: ParameterType[] = ["boolean", "string", "number", "select"];
 
 export const getParameterTopic = (requestType: string, paramId: string) => {
     return `${requestType}/${paramId}`;
@@ -128,7 +124,7 @@ const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstanc
 
         let requiredParamNotSet = false;
         ssInstance.log("debug", "state");
-        ssInstance.log("debug", JSON.stringify(ssInstance.state));
+        ssInstance.log("debug", JSON.stringify(ssInstance.actionsState));
 
         request?.requestParams?.forEach((param) => {
             const { id, type, property, defaultValue } = param;
@@ -136,7 +132,7 @@ const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstanc
                 if (!["controllable", "required"].includes(property)) {
                     return;
                 }
-                const value = !ssInstance.state[action.controlId].value;
+                const value = !ssInstance.actionsState[action.controlId].value;
                 message[id] = value;
                 return;
             }
@@ -211,26 +207,13 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                     request?.requestParams?.forEach((param) => {
                         ssInstance.log("debug", JSON.stringify(action.options));
                         if (param.type === "boolean" && ["controllable", "required"].includes(param.property)) {
-                            ssInstance.log("debug", "adding state entry");
-                            ssInstance.log(
-                                "debug",
-                                JSON.stringify({
-                                    requestType: request.requestType,
-                                    paramId: param.id,
-                                    value: DEFAULT_CHOICE_ID,
-                                    paramValues: action.options,
-                                    companionId: action.actionId,
-                                    controlType: CompanionControlType.ACTION,
-                                })
-                            );
                             // Add state entry
-                            ssInstance.state[action.controlId] = {
+                            ssInstance.actionsState[action.controlId] = {
                                 requestType: request.requestType,
                                 paramId: param.id,
                                 value: DEFAULT_CHOICE_ID,
                                 paramValues: action.options,
-                                companionId: action.actionId,
-                                controlType: CompanionControlType.ACTION,
+                                companionInstanceId: action.id,
                             };
 
                             // Get initial value
@@ -238,7 +221,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                                 "request-type": getRequest.requestType,
                             };
                             let areAllParametersSet = true;
-                            getRequest.requestParams?.forEach((param) => {
+                            request.requestParams?.forEach((param) => {
                                 ssInstance.log("debug", `${param.id}: ${action.options[param.id]}`);
 
                                 const value = action.options[param.id] as InputValue;
@@ -268,7 +251,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                 unsubscribe: (action: CompanionActionInfo) => {
                     ssInstance.removeListenedUpdate(action.controlId);
                     ssInstance.removeListenedUpdate(action.controlId);
-                    delete ssInstance.state[action.controlId];
+                    delete ssInstance.actionsState[action.controlId];
                 },
             };
 

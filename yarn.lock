@@ -3678,7 +3678,7 @@ strip-json-comments@^3.1.0, strip-json-comments@^3.1.1:
 
 "studio-api-client@git+ssh://git@gitlab.tellyo.com:tellyo/studio-api-client.git":
   version "1.0.0"
-  resolved "git+ssh://git@gitlab.tellyo.com:tellyo/studio-api-client.git#a9db2c3fee8fd1690f40723f9489edbfef0cf3fe"
+  resolved "git+ssh://git@gitlab.tellyo.com:tellyo/studio-api-client.git#a266f5f13d3eface36fbd56266edb7f86c840359"
   dependencies:
     events "^3.3.0"
     isomorphic-ws "^5.0.0"

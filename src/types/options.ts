@@ -1,3 +1,5 @@
+import { ParameterType } from "studio-api-client";
+
 export interface Option {
     id: string;
     value: string;
@@ -6,3 +8,5 @@ export interface Option {
 export interface Options {
     [id: string]: Option[];
 }
+
+export const COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET: ParameterType[] = ["boolean", "string", "number", "select"];
