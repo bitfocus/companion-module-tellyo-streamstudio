@@ -19,7 +19,7 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@companion-module/base": "1.6.0",
+		"@companion-module/base": "1.8.0",
 		"uuid": "^9.0.0",
 		"ws": "^8.13.0"
 	},
