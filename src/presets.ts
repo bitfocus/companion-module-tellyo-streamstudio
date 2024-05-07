@@ -12,13 +12,13 @@ export const generatePresets = (): CompanionPresetDefinitions => {
     // VIDEO MIXER
 
     Array.from(Array(8)).forEach((_value, index) => {
-        const indexForUser = index + 1;
-        presets[`PreviewScene${indexForUser}`] = {
+        const indexToDisplay = index + 1;
+        presets[`preview-scene-${indexToDisplay}`] = {
             type: "button",
             category: PresetsCategory.VIDEO_MIXER,
-            name: `Preview Scene ${indexForUser}`,
+            name: `Preview Scene ${indexToDisplay}`,
             style: {
-                text: `PRV ${indexForUser}`,
+                text: `PRV ${indexToDisplay}`,
                 size: "auto",
                 color: Color.WHITE,
                 bgcolor: Color.BLACK,
