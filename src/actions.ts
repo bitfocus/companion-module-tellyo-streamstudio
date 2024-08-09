@@ -125,7 +125,7 @@ const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstanc
 
         request?.requestParams?.forEach((param) => {
             const { id, type, property, defaultValue } = param;
-            if (type === "boolean") {
+            if (type === "boolean" && id !== "controllerValue") {
                 if (!["controllable", "required"].includes(property)) {
                     return;
                 }
