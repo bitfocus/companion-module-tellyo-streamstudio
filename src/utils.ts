@@ -1,5 +1,5 @@
-import { ParameterType } from "studio-api-client";
 import { v4 as uuidv4 } from "uuid";
+import { ParameterType } from "./types/apiDefinition";
 
 export const transformDotCaseToTitleCase = (text: string) => {
     return text

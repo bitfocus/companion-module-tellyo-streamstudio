@@ -15,9 +15,8 @@ import {
 import StreamStudioInstance from "./index";
 import { convertParamOptionsToChoices, getParameterTopic } from "./actions";
 import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET, Options } from "./types/options";
-import { GROUPS_TO_SKIP, RequestMethod } from "./types/apiDefinition";
+import { GROUPS_TO_SKIP, Request, RequestDefinition, RequestMethod, RequestParameter } from "./types/apiDefinition";
 import { commandParameterTypeToInputType, getRequestMethod, transformDotCaseToTitleCase } from "./utils";
-import { NotificationTypes, Request, RequestDefinition, RequestParameter } from "studio-api-client";
 import { CompanionControlType } from "./types/stateStore";
 
 const DEFAULT_CHOICE_ID = "default_option";
@@ -201,7 +200,7 @@ const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackD
                             }
 
                             // Subscribe to notifications
-                            ssInstance.addListenedUpdate(setRequestType as NotificationTypes, feedback.controlId);
+                            ssInstance.addListenedUpdate(setRequestType, feedback.controlId);
                         }
                     });
 

@@ -1,4 +1,4 @@
-import { ParameterType } from "studio-api-client";
+import { ParameterType } from "./apiDefinition";
 
 export interface Option {
     id: string;

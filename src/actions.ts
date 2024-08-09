@@ -14,8 +14,7 @@ import {
 import { commandParameterTypeToInputType, getRequestMethod, transformDotCaseToTitleCase } from "./utils";
 import StreamStudioInstance from "./index";
 import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET, Option, Options } from "./types/options";
-import { GROUPS_TO_SKIP, RequestMethod } from "./types/apiDefinition";
-import { NotificationTypes, Request, RequestDefinition, RequestParameter } from "studio-api-client";
+import { GROUPS_TO_SKIP, Request, RequestDefinition, RequestMethod, RequestParameter } from "./types/apiDefinition";
 import { CompanionCommonCallbackContext } from "@companion-module/base/dist/module-api/common";
 import { CompanionControlType } from "./types/stateStore";
 
@@ -238,7 +237,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                             }
 
                             // Subscribe to notifications
-                            ssInstance.addListenedUpdate(request.requestType as NotificationTypes, action.controlId);
+                            ssInstance.addListenedUpdate(request.requestType, action.controlId);
                         }
 
                         if (COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET.includes(param.type)) return;

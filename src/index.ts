@@ -10,10 +10,11 @@ import { Option, Options } from "./types/options";
 import generateActions, { getParameterTopic } from "./actions";
 import generateFeedbacks from "./feedbacks";
 import { ListenedUpdates } from "./types/updates";
-import { ApiDefinition } from "./types/apiDefinition";
+import { ApiDefinition, Request } from "./types/apiDefinition";
 import { generatePresets } from "./presets";
 import { CompanionControlType, ActionsState, FeedbacksState } from "./types/stateStore";
-import { getAPIDefinition, NotificationTypes, Request, StreamStudioClient } from "studio-api-client";
+import { StreamStudioClient } from "./studioApiClient";
+import apiDefinition from "./apiDefinitions.json";
 
 const RECONNECT_INTERVAL_IN_MS = 2000;
 
@@ -40,14 +41,14 @@ class StreamStudioInstance extends InstanceBase<Config> {
     public async init(config: Config): Promise<void> {
         this.config = config;
 
-        this.client.on("gateway-connection" as NotificationTypes, this.onConnection);
+        this.client.onws("connected", this.onConnection);
         this.client.onws("closed", this.startReconnecting);
-        this.client.onws("error", (e) => {
+        this.client.onws("error", (e: any) => {
             this.log("error", JSON.stringify(e));
         });
 
         try {
-            this.apiDefinition = getAPIDefinition();
+            this.apiDefinition = apiDefinition as ApiDefinition;
         } catch (e) {
             this.updateStatus(InstanceStatus.ConnectionFailure);
             return;
@@ -164,7 +165,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
         this.checkFeedbacksById(...Array.from(feedbacksToUpdate));
     };
 
-    public addListenedUpdate = (updateType: NotificationTypes, companionControlId: string) => {
+    public addListenedUpdate = (updateType: string, companionControlId: string) => {
         if (!Object.values(this.listenedUpdates).includes(updateType)) {
             this.log("debug", `Subscribing notification: ${updateType}`);
             this.client.on(updateType, this.handleUpdate);
@@ -223,7 +224,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
         this.client
             .send(request)
             .then((res) => {
-                this.log("debug", JSON.stringify(res));
+                this.log("debug", `Options response: ${JSON.stringify(res)}`);
                 const options = (res as any)["options"] as Option[];
                 const topic = getParameterTopic(requestType, parameterName);
                 this.options[topic] = options;
@@ -242,7 +243,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
     public sendRequest = async (message: Request) => {
         this.log("debug", `Sending request: ${JSON.stringify(message)}`);
         try {
-            this.client.send(message);
+            await this.client.send(message);
         } catch (e) {
             this.log("error", JSON.stringify(e));
         }
