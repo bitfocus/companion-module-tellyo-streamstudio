@@ -133,6 +133,8 @@ const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackD
             requests: value,
         };
         group.requests.forEach((request) => {
+            // To be removed when all requests gets a prettyName
+            if (request.pretty_name === "") return;
             const { requestType, requestParams, hidden, responseParams } = request;
 
             if (hidden) return;

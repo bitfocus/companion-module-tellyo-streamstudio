@@ -173,6 +173,8 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
         };
 
         group.requests.forEach((request) => {
+            // To be removed when all requests gets a prettyName
+            if (request.pretty_name === "") return;
             const { requestType, requestParams, hidden } = request;
 
             if (hidden) return;
