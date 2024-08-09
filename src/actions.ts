@@ -181,12 +181,32 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
 
             if (method !== RequestMethod.SET) return;
 
+            let hasControllableBooleanParam = false;
+
             const options: SomeCompanionActionInputField[] = [];
             requestParams?.forEach((param) => {
-                const { type, property } = param;
+                const { type, property, id } = param;
                 if (["controllable", "required"].includes(property) && type === "boolean") {
+                    hasControllableBooleanParam = true;
                     return;
                 }
+
+                // Temporary solution
+                if (id === "controllerMode") {
+                    param.prettyName = "Mode";
+                    if (hasControllableBooleanParam && param.values && typeof param.values[0] === "string") {
+                        param.values = param.values
+                            ?.filter((value) => value !== "relative")
+                            .map((value) => ({
+                                id: value,
+                                value: value === "default" ? "toggle" : value,
+                            }));
+                    }
+                }
+                if (id === "controllerValue") {
+                    param.prettyName = "Value";
+                }
+
                 options.push(getInput(param, request, ssInstance));
             });
 

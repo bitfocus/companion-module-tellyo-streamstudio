@@ -141,6 +141,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
             if (updateType !== stateEntry.requestType) return;
             const isEveryParamMatching = Object.entries(stateEntry.paramValues).every((entry) => {
                 const [paramId, value] = entry;
+                if (["controllerValue", "controllerMode"].includes(paramId)) return true;
                 return notification[paramId] === value;
             });
             if (!isEveryParamMatching) return;
