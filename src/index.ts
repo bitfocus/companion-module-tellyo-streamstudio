@@ -41,7 +41,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
     public async init(config: Config): Promise<void> {
         this.config = config;
 
-        this.client.onws("connected", this.onConnection);
+        this.client.on("gateway-connection", this.onConnection);
         this.client.onws("closed", this.startReconnecting);
         this.client.onws("error", (e: any) => {
             this.log("error", JSON.stringify(e));
