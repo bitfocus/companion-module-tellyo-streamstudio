@@ -184,14 +184,23 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
             if (method !== RequestMethod.SET) return;
 
             let hasControllableBooleanParam = false;
+            let hasControllableNumberParam = false;
 
             const options: SomeCompanionActionInputField[] = [];
             requestParams?.forEach((param) => {
                 const { type, property, id } = param;
-                if (["controllable", "required"].includes(property) && type === "boolean") {
-                    hasControllableBooleanParam = true;
-                    return;
+
+                if (["controllable", "required"].includes(property)) {
+                    if (type === "number") {
+                        hasControllableNumberParam = true;
+                        return;
+                    }
+                    if (type === "boolean") {
+                        hasControllableBooleanParam = true;
+                        return;
+                    }
                 }
+                if (param.property.includes("hidden") || param.property === "controllable") return;
 
                 // Temporary solution
                 if (id === "controllerMode") {
@@ -203,6 +212,9 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                                 id: value,
                                 value: value === "default" ? "toggle" : value,
                             }));
+                    }
+                    if (hasControllableNumberParam && param.values && typeof param.values[0] === "string") {
+                        param.values = param.values?.filter((value) => value !== "default");
                     }
                 }
                 if (id === "controllerValue") {
