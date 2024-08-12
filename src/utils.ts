@@ -1,20 +1,20 @@
-import { CommandParameterType } from "./types/commandsTemplates";
 import { v4 as uuidv4 } from "uuid";
+import { ParameterType } from "./types/apiDefinition";
 
-export const transformToTitleCase = (text: string) => {
+export const transformDotCaseToTitleCase = (text: string) => {
     return text
-        .split(" ")
+        .split(".")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ");
 };
 
-export const commandParameterTypeToInputType = (type: CommandParameterType) => {
+export const commandParameterTypeToInputType = (type: ParameterType) => {
     switch (type) {
-        case CommandParameterType.NUMBER:
+        case "number":
             return "number";
-        case CommandParameterType.BOOLEAN:
+        case "boolean":
             return "checkbox";
-        case CommandParameterType.STRING:
+        case "string":
             return "textinput";
         default:
             return "dropdown";
@@ -23,8 +23,9 @@ export const commandParameterTypeToInputType = (type: CommandParameterType) => {
 
 export const generateMessageId = () => `COMPANION_MODULE_TELLYO_STREAMSTUDIO_${uuidv4()}`;
 
-export const trimText = (text: string, length: number) => {
-    return `${text.substring(0, length)}${text.length > length ? "..." : ""}`;
+export const trimText = (text: string, _length: number) => {
+    return text;
+    // return `${text.substring(0, length)}${text.length > length ? "..." : ""}`;
 };
 
 export const setValueAtPath = (obj: any, value: any, path: string) => {
@@ -61,4 +62,9 @@ export const getValueAtPath = (obj: any, path: string) => {
         current = current[key];
     }
     return;
+};
+
+export const getRequestMethod = (requestType: string) => {
+    const parts = requestType.split(".");
+    return parts[parts.length - 1];
 };

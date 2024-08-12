@@ -1,8 +1,23 @@
-import { CompanionFeedbackDefinitions, DropdownChoice, combineRgb } from "@companion-module/base";
+import {
+    CompanionFeedbackBooleanEvent,
+    CompanionFeedbackDefinition,
+    CompanionFeedbackDefinitions,
+    CompanionFeedbackInfo,
+    CompanionInputFieldCheckbox,
+    CompanionInputFieldDropdown,
+    CompanionInputFieldNumber,
+    CompanionInputFieldTextInput,
+    DropdownChoice,
+    InputValue,
+    SomeCompanionFeedbackInputField,
+    combineRgb,
+} from "@companion-module/base";
 import StreamStudioInstance from "./index";
 import { convertParamOptionsToChoices, getParameterTopic } from "./actions";
-import { Options } from "./types/options";
-import { RequestType } from "./types/requests";
+import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET, Options } from "./types/options";
+import { GROUPS_TO_SKIP, Request, RequestDefinition, RequestMethod, RequestParameter } from "./types/apiDefinition";
+import { commandParameterTypeToInputType, getRequestMethod, transformDotCaseToTitleCase } from "./utils";
+import { CompanionControlType } from "./types/stateStore";
 
 const DEFAULT_CHOICE_ID = "default_option";
 
@@ -28,341 +43,184 @@ export enum Feedback {
     AUDIO_OUTPUT_MUTED = "AudioOutputMuted",
 }
 
-const getChoices = (paramId: string, commandId: string, availableOptions: Options): DropdownChoice[] => {
-    const topic = getParameterTopic(commandId, paramId);
+const getChoices = <T>(
+    param: RequestParameter<T>,
+    requestType: string,
+    availableOptions: Options
+): DropdownChoice[] => {
+    if (param.type === "select" && param.values) return convertParamOptionsToChoices(param.values);
+    const topic = getParameterTopic(requestType, param.id);
     if (typeof availableOptions[topic] !== "undefined") return convertParamOptionsToChoices(availableOptions[topic]);
     return [{ id: 0, label: "No options available." }];
+};
+
+const getInput = <T>(
+    param: RequestParameter<T>,
+    getRequest: RequestDefinition,
+    ssInstance: StreamStudioInstance
+): SomeCompanionFeedbackInputField => {
+    const inputType = commandParameterTypeToInputType(param.type);
+    switch (inputType) {
+        case "number": {
+            const label = param.range
+                ? `${param.prettyName} (min ${param.range.min}, max ${param.range.max})`
+                : param.prettyName;
+            const input: CompanionInputFieldNumber = {
+                type: "number",
+                id: param.id,
+                label,
+                default: typeof param.defaultValue === "number" ? param.defaultValue : 0,
+                min: (param.range?.min as number) || 0,
+                max: (param.range?.max as number) || 0,
+            };
+            return input;
+        }
+        case "textinput": {
+            const input: CompanionInputFieldTextInput = {
+                type: "textinput",
+                id: param.id,
+                label: param.prettyName,
+                default: typeof param.defaultValue === "string" ? param.defaultValue : undefined,
+            };
+            return input;
+        }
+        case "checkbox": {
+            const input: CompanionInputFieldCheckbox = {
+                type: "checkbox",
+                id: param.id,
+                label: param.prettyName,
+                default: typeof param.defaultValue === "boolean" ? param.defaultValue : false,
+            };
+            return input;
+        }
+        case "dropdown": {
+            const choices = getChoices(param, getRequest.requestType, ssInstance.options);
+            const input: CompanionInputFieldDropdown = {
+                type: "dropdown",
+                id: param.id,
+                label: `${param.prettyName}${param.property === "required" ? " (required)" : ""}`,
+                choices,
+                default: DEFAULT_CHOICE_ID,
+            };
+            return input;
+        }
+    }
+};
+
+const getCallback = (ssInstance: StreamStudioInstance, requestType: string, controlledParamId?: string) => {
+    return (feedback: CompanionFeedbackBooleanEvent) => {
+        const value = ssInstance.feedbacksState[feedback.controlId].value;
+        if (typeof value === "boolean") return value;
+        if (value === DEFAULT_CHOICE_ID) return false;
+        if (!controlledParamId) {
+            ssInstance.log("error", `Request ${requestType} - no value for controlled param.`);
+            return false;
+        }
+        return value === feedback.options[controlledParamId];
+    };
 };
 
 const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackDefinitions => {
     const feedbacks: CompanionFeedbackDefinitions = {};
 
-    feedbacks[Feedback.MONITORED_AUDIO] = {
-        type: "boolean",
-        name: "Video Mixer: Monitored audio (PREVIEW or PROGRAM)",
-        defaultStyle: {
-            bgcolor: Color.RED,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "dropdown",
-                label: "Monitored audio",
-                choices: [
-                    { id: "preview", label: "Preview" },
-                    { id: "program", label: "Program" },
-                ],
-                id: "source",
-                default: "preview",
-            },
-        ],
-        callback: (feedback) => {
-            const source = feedback.options["source"];
-            return source === ssInstance.projectState.monitoredAudio;
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_AUDIO_MIXER_STATE);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "PlayAudio" });
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+    const { apiDefinition } = ssInstance;
+    if (!apiDefinition) return feedbacks;
+    for (const [key, value] of Object.entries(apiDefinition)) {
+        if (GROUPS_TO_SKIP.includes(key)) continue;
+        const group = {
+            name: transformDotCaseToTitleCase(key),
+            id: key,
+            requests: value,
+        };
+        group.requests.forEach((request) => {
+            // To be removed when all requests gets a prettyName
+            if (request.pretty_name === "") return;
+            const { requestType, requestParams, hidden, responseParams } = request;
 
-    feedbacks[Feedback.DIRECT_EDIT_SCENE] = {
-        type: "boolean",
-        name: "Video Mixer: Direct Edit - Scenes (active)",
-        defaultStyle: {
-            bgcolor: Color.RED,
-            color: Color.BLACK,
-        },
-        options: [],
-        callback: (_feedback) => {
-            return ssInstance.projectState.directEditScene;
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_DIRECT_EDIT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "SetDirectEditScene" });
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+            if (hidden) return;
 
-    feedbacks[Feedback.DIRECT_EDIT_LAYER] = {
-        type: "boolean",
-        name: "Video Mixer: Direct Edit - Layers (active)",
-        defaultStyle: {
-            bgcolor: Color.RED,
-            color: Color.BLACK,
-        },
-        options: [],
-        callback: (_feedback) => {
-            return ssInstance.projectState.directEditLayer;
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_DIRECT_EDIT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "SetDirectEditLayer" });
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+            const method = getRequestMethod(requestType);
 
-    feedbacks[Feedback.PROGRAM_SCENE_INDEX] = {
-        type: "boolean",
-        name: "Video Mixer: Program Scene by index (active)",
-        defaultStyle: {
-            bgcolor: Color.RED,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "dropdown",
-                id: "scene-index",
-                label: "Scene index",
-                choices: getChoices("sceneIndex", "SetCurrentSceneByIndex", ssInstance.options),
-                default: DEFAULT_CHOICE_ID,
-            },
-        ],
-        callback: (feedback) => {
-            return ssInstance.projectState.currentProgramSceneIndex === feedback.options["scene-index"];
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_LATEST_PROJECT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "ProgramSceneChanged" });
-            ssInstance.getOptions("SetCurrentSceneByIndex", "sceneIndex");
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+            if (method !== RequestMethod.GET) return;
 
-    feedbacks[Feedback.PREVIEW_SCENE_INDEX] = {
-        type: "boolean",
-        name: "Video Mixer: Preview Scene by index (active)",
-        defaultStyle: {
-            bgcolor: Color.GREEN,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "dropdown",
-                id: "scene-index",
-                label: "Scene index",
-                choices: getChoices("sceneIndex", "SetPreviewSceneByIndex", ssInstance.options),
-                default: DEFAULT_CHOICE_ID,
-            },
-        ],
-        callback: (feedback) => {
-            return ssInstance.projectState.currentPreviewSceneIndex === feedback.options["scene-index"];
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_LATEST_PROJECT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "PreviewSceneChanged" });
-            ssInstance.getOptions("SetPreviewSceneByIndex", "sceneIndex");
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+            const options: SomeCompanionFeedbackInputField[] = [];
+            requestParams?.forEach((param) => {
+                options.push(getInput(param, request, ssInstance));
+            });
+            let controlledParamId;
+            responseParams?.forEach((param) => {
+                const { property, type, id } = param;
+                if (["controllable", "required"].includes(property)) {
+                    if (type === "boolean") return;
+                    options.push(getInput(param, request, ssInstance));
+                    controlledParamId = id;
+                }
+            });
 
-    feedbacks[Feedback.PROGRAM_SCENE_NAME] = {
-        type: "boolean",
-        name: "Video Mixer: Program Scene by name (active)",
-        defaultStyle: {
-            bgcolor: Color.RED,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "dropdown",
-                id: "scene-name",
-                label: "Scene name",
-                choices: getChoices("scene-name", "SetCurrentSceneByName", ssInstance.options),
-                default: DEFAULT_CHOICE_ID,
-            },
-        ],
-        callback: (feedback) => {
-            return ssInstance.projectState.currentProgramSceneName === feedback.options["scene-name"];
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_LATEST_PROJECT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "ProgramSceneChanged" });
-            ssInstance.getOptions("SetCurrentSceneByName", "scene-name");
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+            const setRequestType = `${requestType.substring(0, requestType.length - 3)}set`;
 
-    feedbacks[Feedback.PREVIEW_SCENE_NAME] = {
-        type: "boolean",
-        name: "Video Mixer: Preview Scene by name (active)",
-        defaultStyle: {
-            bgcolor: Color.GREEN,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "dropdown",
-                id: "scene-name",
-                label: "Scene name",
-                choices: getChoices("scene-name", "SetPreviewScene", ssInstance.options),
-                default: DEFAULT_CHOICE_ID,
-            },
-        ],
-        callback: (feedback) => {
-            return ssInstance.projectState.currentPreviewSceneName === feedback.options["scene-name"];
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_LATEST_PROJECT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "PreviewSceneChanged" });
-            ssInstance.getOptions("SetPreviewScene", "scene-name");
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+            const feedback: CompanionFeedbackDefinition = {
+                name: `${group.name}: ${request.pretty_name}`,
+                options,
+                type: "boolean",
+                defaultStyle: {
+                    bgcolor: Color.RED,
+                    color: Color.BLACK,
+                },
+                callback: getCallback(ssInstance, requestType, controlledParamId),
+                subscribe: (feedback: CompanionFeedbackInfo) => {
+                    request?.responseParams?.forEach((param) => {
+                        if (["controllable", "required"].includes(param.property)) {
+                            // Add state entry
+                            ssInstance.feedbacksState[feedback.controlId] = {
+                                requestType: setRequestType,
+                                paramId: param.id,
+                                value: DEFAULT_CHOICE_ID,
+                                paramValues: feedback.options,
+                                companionInstanceId: feedback.id,
+                                requestParamsIds: requestParams ? requestParams?.map((param) => param.id) : [],
+                            };
 
-    feedbacks[Feedback.REPLAYS_PLAYBACK_SPEED_PREDEFINED] = {
-        type: "boolean",
-        name: "Replays: Playback speed (predefined, all slots)",
-        defaultStyle: {
-            bgcolor: Color.PURPLE,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "dropdown",
-                id: "speed",
-                label: "Speed [%]",
-                choices: [
-                    {
-                        id: 25,
-                        label: "25%",
-                    },
-                    {
-                        id: 33,
-                        label: "33%",
-                    },
-                    {
-                        id: 50,
-                        label: "50%",
-                    },
-                    {
-                        id: 75,
-                        label: "75%",
-                    },
-                    {
-                        id: 100,
-                        label: "100%",
-                    },
-                ],
-                default: 100,
-            },
-        ],
-        callback: (feedback) => {
-            return ssInstance.projectState.replaysPlaybackSpeed === feedback.options["speed"];
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_LATEST_PROJECT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "replays.slot.playback.speed" });
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+                            // Get initial value
+                            const message: Record<string, InputValue> = {
+                                "request-type": request.requestType,
+                            };
+                            let areAllParametersSet = true;
+                            request.requestParams?.forEach((param) => {
+                                const value = feedback.options[param.id] as InputValue;
+                                if (value === DEFAULT_CHOICE_ID) areAllParametersSet = false;
+                                message[param.id] = value;
+                            });
 
-    feedbacks[Feedback.REPLAYS_PLAYBACK_SPEED] = {
-        type: "boolean",
-        name: "Replays: Playback speed (all slots)",
-        defaultStyle: {
-            bgcolor: Color.PURPLE,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "number",
-                id: "speed",
-                label: "Speed [%] (min 1, max 200)",
-                default: 100,
-                min: 1,
-                max: 200,
-            },
-        ],
-        callback: (feedback) => {
-            return ssInstance.projectState.replaysPlaybackSpeed === feedback.options["speed"];
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_LATEST_PROJECT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "replays.slot.playback.speed" });
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+                            if (areAllParametersSet) {
+                                ssInstance.sendValueRequest(
+                                    message as Request,
+                                    feedback.controlId,
+                                    param.id,
+                                    CompanionControlType.FEEDBACK
+                                );
+                            }
 
-    feedbacks[Feedback.REPLAYS_SELECTED_SLOT] = {
-        type: "boolean",
-        name: "Replays: Selected slot",
-        defaultStyle: {
-            bgcolor: Color.PURPLE,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "dropdown",
-                id: "slot",
-                label: "Slot index",
-                choices: getChoices("slot", "replays.slot.select", ssInstance.options),
-                default: DEFAULT_CHOICE_ID,
-            },
-        ],
-        callback: (feedback) => {
-            return ssInstance.projectState.replaysSelectedSlot === feedback.options["slot"];
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.GET_LATEST_PROJECT);
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "replays.slot.select" });
-            ssInstance.getOptions("replays.slot.select", "slot");
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+                            // Subscribe to notifications
+                            ssInstance.addListenedUpdate(setRequestType, feedback.controlId);
+                        }
+                    });
 
-    feedbacks[Feedback.AUDIO_OUTPUT_MUTED] = {
-        type: "boolean",
-        name: "Audio Mixer Outputs: Output mute state",
-        defaultStyle: {
-            bgcolor: Color.RED,
-            color: Color.BLACK,
-        },
-        options: [
-            {
-                type: "dropdown",
-                id: "output",
-                label: "Output",
-                choices: getChoices("output", "audiomixer.output.muted", ssInstance.options),
-                default: DEFAULT_CHOICE_ID,
-            },
-        ],
-        callback: (feedback) => {
-            const output = feedback.options["output"];
-            const outputFromState = ssInstance.projectState.audioOutputs[output as string];
-            if (typeof outputFromState === "undefined") return false;
-            return outputFromState.muted;
-        },
-        subscribe: (feedback) => {
-            ssInstance.addAwaitedRequest(RequestType.AUDIOMIXER_OUTPUT_MUTED, { output: feedback.options["output"] });
-            ssInstance.addListenedUpdate({ feedbackId: feedback.id, updateType: "audiomixer.output.muted" });
-            ssInstance.getOptions("audiomixer.output.muted", "output");
-        },
-        unsubscribe: (feedback) => {
-            ssInstance.removeListenedUpdate(feedback.id);
-        },
-    };
+                    requestParams?.forEach((param) => {
+                        if (COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET.includes(param.type)) return;
+                        ssInstance.getOptions(requestType, param.id);
+                    });
+                },
+                unsubscribe: (feedback: CompanionFeedbackInfo) => {
+                    ssInstance.removeListenedUpdate(feedback.controlId);
+                    ssInstance.removeListenedUpdate(feedback.controlId);
+                    delete ssInstance.feedbacksState[feedback.controlId];
+                },
+            };
+
+            feedbacks[request.requestType] = feedback;
+        });
+    }
 
     return feedbacks;
 };

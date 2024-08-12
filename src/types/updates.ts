@@ -1,4 +1,2 @@
-export interface ListenedUpdate {
-    feedbackId: string;
-    updateType: string;
-}
+// Key is companion id (actionId/feedbackId)
+export type ListenedUpdates = Record<string, string>;
