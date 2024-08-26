@@ -1,6 +1,6 @@
 {
 	"name": "companion-module-tellyo-streamstudio",
-	"version": "2.0.0-beta.3",
+	"version": "2.0.0",
 	"main": "dist/index.js",
 	"scripts": {
 		"dev": "yarn build:watch",
