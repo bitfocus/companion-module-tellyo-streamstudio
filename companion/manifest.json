@@ -1,5 +1,5 @@
 {
-	"id": "companion-module-tellyo-streamstudio",
+	"id": "tellyo-streamstudio",
 	"name": "tellyo-streamstudio",
 	"shortname": "streamstudio",
 	"description": "Module to control Tellyo Stream Studio instances through Studio Controller",
