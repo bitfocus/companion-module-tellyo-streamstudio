@@ -229,7 +229,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
             const getRequest = group.requests.find((request) => request.requestType === getRequestType);
 
             const action: CompanionActionDefinition = {
-                name: `${group.name}: ${request.pretty_name}`,
+                name: `${group.name}: ${request.pretty_name ? request.pretty_name : request.requestType}`,
                 options: options,
                 callback: getCallback(request, ssInstance),
                 subscribe: (action: CompanionActionInfo) => {
