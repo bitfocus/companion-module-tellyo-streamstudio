@@ -71,8 +71,8 @@ export const getInput = <T>(
                 id: param.id,
                 label,
                 default: typeof param.defaultValue === "number" ? param.defaultValue : 0,
-                min: (param.range?.min as number) || 0,
-                max: (param.range?.max as number) || 0,
+                min: (param.range?.min as number) || Number.MIN_SAFE_INTEGER,
+                max: (param.range?.max as number) || Number.MAX_SAFE_INTEGER,
             };
             return input;
         }
