@@ -3,6 +3,7 @@ import {
     CompanionActionDefinitions,
     CompanionActionEvent,
     CompanionActionInfo,
+    CompanionOptionValues,
     InputValue,
     SomeCompanionActionInputField,
 } from "@companion-module/base";
@@ -127,11 +128,17 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                         param.values = param.values?.filter((value) => value !== "default");
                     }
                 }
+                let isVisible = undefined;
                 if (id === "controllerValue") {
                     param.prettyName = "Value";
+                    if (hasControllableBooleanParam) {
+                        isVisible = (options: CompanionOptionValues) => {
+                            return options["controllerMode"] === "fixed";
+                        };
+                    }
                 }
 
-                options.push(getInput(param, request, ssInstance));
+                options.push(getInput(param, request, ssInstance, isVisible));
             });
 
             const getRequestType = `${requestType.substring(0, requestType.length - 3)}get`;

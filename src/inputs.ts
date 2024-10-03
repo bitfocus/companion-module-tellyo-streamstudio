@@ -5,6 +5,7 @@ import {
     CompanionInputFieldCheckbox,
     CompanionInputFieldDropdown,
     DropdownChoice,
+    CompanionOptionValues,
 } from "@companion-module/base";
 import StreamStudioInstance from "./index";
 import { RequestParameter, RequestDefinition } from "./types/apiDefinition";
@@ -58,7 +59,8 @@ const getChoices = <T>(
 export const getInput = <T>(
     param: RequestParameter<T>,
     getRequest: RequestDefinition,
-    ssInstance: StreamStudioInstance
+    ssInstance: StreamStudioInstance,
+    isVisible?: (options: CompanionOptionValues) => boolean
 ): SomeCompanionFeedbackInputField => {
     const inputType = commandParameterTypeToInputType(param.type);
     switch (inputType) {
@@ -73,6 +75,7 @@ export const getInput = <T>(
                 default: typeof param.defaultValue === "number" ? param.defaultValue : 0,
                 min: (param.range?.min as number) || Number.MIN_SAFE_INTEGER,
                 max: (param.range?.max as number) || Number.MAX_SAFE_INTEGER,
+                isVisible,
             };
             return input;
         }
@@ -82,6 +85,7 @@ export const getInput = <T>(
                 id: param.id,
                 label: param.prettyName,
                 default: typeof param.defaultValue === "string" ? param.defaultValue : undefined,
+                isVisible,
             };
             return input;
         }
@@ -91,6 +95,7 @@ export const getInput = <T>(
                 id: param.id,
                 label: param.prettyName,
                 default: typeof param.defaultValue === "boolean" ? param.defaultValue : false,
+                isVisible,
             };
             return input;
         }
@@ -102,6 +107,7 @@ export const getInput = <T>(
                 label: `${param.prettyName}${param.property === "required" ? " (required)" : ""}`,
                 choices,
                 default: DEFAULT_CHOICE_ID,
+                isVisible,
             };
             return input;
         }
