@@ -144,6 +144,16 @@ const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackD
             if (method !== RequestMethod.GET) return;
 
             const options: SomeCompanionFeedbackInputField[] = [];
+
+            if (request.doc_request_description) {
+                options.push({
+                    id: "description",
+                    type: "static-text",
+                    label: "Description",
+                    value: request.doc_request_description,
+                });
+            }
+
             requestParams?.forEach((param) => {
                 options.push(getInput(param, request, ssInstance));
             });
