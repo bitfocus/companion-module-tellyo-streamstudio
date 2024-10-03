@@ -3,21 +3,16 @@ import {
     CompanionFeedbackDefinition,
     CompanionFeedbackDefinitions,
     CompanionFeedbackInfo,
-    CompanionInputFieldCheckbox,
-    CompanionInputFieldDropdown,
-    CompanionInputFieldNumber,
-    CompanionInputFieldTextInput,
-    DropdownChoice,
     InputValue,
     SomeCompanionFeedbackInputField,
     combineRgb,
 } from "@companion-module/base";
 import StreamStudioInstance from "./index";
-import { convertParamOptionsToChoices, getParameterTopic } from "./actions";
-import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET, Options } from "./types/options";
-import { GROUPS_TO_SKIP, Request, RequestDefinition, RequestMethod, RequestParameter } from "./types/apiDefinition";
-import { commandParameterTypeToInputType, getRequestMethod, transformDotCaseToTitleCase } from "./utils";
+import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET } from "./types/options";
+import { GROUPS_TO_SKIP, Request, RequestMethod } from "./types/apiDefinition";
+import { getRequestMethod, transformDotCaseToTitleCase } from "./utils";
 import { CompanionControlType } from "./types/stateStore";
+import { getInput } from "./inputs";
 
 const DEFAULT_CHOICE_ID = "default_option";
 
@@ -42,70 +37,6 @@ export enum Feedback {
     REPLAYS_SELECTED_SLOT = "ReplaysSelectedSlot",
     AUDIO_OUTPUT_MUTED = "AudioOutputMuted",
 }
-
-const getChoices = <T>(
-    param: RequestParameter<T>,
-    requestType: string,
-    availableOptions: Options
-): DropdownChoice[] => {
-    if (param.type === "select" && param.values) return convertParamOptionsToChoices(param.values);
-    const topic = getParameterTopic(requestType, param.id);
-    if (typeof availableOptions[topic] !== "undefined") return convertParamOptionsToChoices(availableOptions[topic]);
-    return [{ id: 0, label: "No options available." }];
-};
-
-const getInput = <T>(
-    param: RequestParameter<T>,
-    getRequest: RequestDefinition,
-    ssInstance: StreamStudioInstance
-): SomeCompanionFeedbackInputField => {
-    const inputType = commandParameterTypeToInputType(param.type);
-    switch (inputType) {
-        case "number": {
-            const label = param.range
-                ? `${param.prettyName} (min ${param.range.min}, max ${param.range.max})`
-                : param.prettyName;
-            const input: CompanionInputFieldNumber = {
-                type: "number",
-                id: param.id,
-                label,
-                default: typeof param.defaultValue === "number" ? param.defaultValue : 0,
-                min: (param.range?.min as number) || 0,
-                max: (param.range?.max as number) || 0,
-            };
-            return input;
-        }
-        case "textinput": {
-            const input: CompanionInputFieldTextInput = {
-                type: "textinput",
-                id: param.id,
-                label: param.prettyName,
-                default: typeof param.defaultValue === "string" ? param.defaultValue : undefined,
-            };
-            return input;
-        }
-        case "checkbox": {
-            const input: CompanionInputFieldCheckbox = {
-                type: "checkbox",
-                id: param.id,
-                label: param.prettyName,
-                default: typeof param.defaultValue === "boolean" ? param.defaultValue : false,
-            };
-            return input;
-        }
-        case "dropdown": {
-            const choices = getChoices(param, getRequest.requestType, ssInstance.options);
-            const input: CompanionInputFieldDropdown = {
-                type: "dropdown",
-                id: param.id,
-                label: `${param.prettyName}${param.property === "required" ? " (required)" : ""}`,
-                choices,
-                default: DEFAULT_CHOICE_ID,
-            };
-            return input;
-        }
-    }
-};
 
 const getCallback = (ssInstance: StreamStudioInstance, requestType: string, controlledParamId?: string) => {
     return (feedback: CompanionFeedbackBooleanEvent) => {

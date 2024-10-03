@@ -3,116 +3,16 @@ import {
     CompanionActionDefinitions,
     CompanionActionEvent,
     CompanionActionInfo,
-    CompanionInputFieldCheckbox,
-    CompanionInputFieldDropdown,
-    CompanionInputFieldNumber,
-    CompanionInputFieldTextInput,
-    DropdownChoice,
     InputValue,
     SomeCompanionActionInputField,
 } from "@companion-module/base";
-import { commandParameterTypeToInputType, getRequestMethod, transformDotCaseToTitleCase } from "./utils";
+import { getRequestMethod, transformDotCaseToTitleCase } from "./utils";
 import StreamStudioInstance from "./index";
-import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET, Option, Options } from "./types/options";
-import { GROUPS_TO_SKIP, Request, RequestDefinition, RequestMethod, RequestParameter } from "./types/apiDefinition";
+import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET } from "./types/options";
+import { GROUPS_TO_SKIP, Request, RequestDefinition, RequestMethod } from "./types/apiDefinition";
 import { CompanionCommonCallbackContext } from "@companion-module/base/dist/module-api/common";
 import { CompanionControlType } from "./types/stateStore";
-
-export const getParameterTopic = (requestType: string, paramId: string) => {
-    return `${requestType}/${paramId}`;
-};
-
-const DEFAULT_CHOICE_ID = "default_option";
-const defaultChoice: DropdownChoice = {
-    id: DEFAULT_CHOICE_ID,
-    label: "Select an option...",
-};
-
-export const convertParamOptionsToChoices = <T>(options: Option[] | T[]): DropdownChoice[] => {
-    if (options.length === 0) return [defaultChoice];
-    if (["string", "number"].includes(typeof options[0])) {
-        return [
-            defaultChoice,
-            ...options.map((option) => {
-                const stringOption = typeof option === "string" ? option : (option as number).toString();
-                return { id: stringOption, label: stringOption };
-            }),
-        ];
-    }
-    return [
-        defaultChoice,
-        ...options.map((option) => {
-            const typedOption = option as Option;
-            return {
-                id: typeof typedOption.id === "undefined" ? "undefined" : typedOption.id,
-                label: typedOption.value,
-            };
-        }),
-    ];
-};
-
-const getChoices = <T>(
-    param: RequestParameter<T>,
-    requestType: string,
-    availableOptions: Options
-): DropdownChoice[] => {
-    if (param.type === "select" && param.values) return convertParamOptionsToChoices(param.values);
-    const topic = getParameterTopic(requestType, param.id);
-    if (typeof availableOptions[topic] !== "undefined") return convertParamOptionsToChoices(availableOptions[topic]);
-    return [{ id: 0, label: "No options available." }];
-};
-
-const getInput = <T>(
-    param: RequestParameter<T>,
-    setRequest: RequestDefinition,
-    ssInstance: StreamStudioInstance
-): SomeCompanionActionInputField => {
-    const inputType = commandParameterTypeToInputType(param.type);
-    const paramName = param.prettyName || param.id;
-    switch (inputType) {
-        case "number": {
-            const label = param.range ? `${paramName} (min ${param.range.min}, max ${param.range.max})` : paramName;
-            const input: CompanionInputFieldNumber = {
-                type: "number",
-                id: param.id,
-                label,
-                default: typeof param.defaultValue === "number" ? param.defaultValue : 0,
-                min: (param.range?.min as number) || 0,
-                max: (param.range?.max as number) || 0,
-            };
-            return input;
-        }
-        case "textinput": {
-            const input: CompanionInputFieldTextInput = {
-                type: "textinput",
-                id: param.id,
-                label: paramName,
-                default: typeof param.defaultValue === "string" ? param.defaultValue : undefined,
-            };
-            return input;
-        }
-        case "checkbox": {
-            const input: CompanionInputFieldCheckbox = {
-                type: "checkbox",
-                id: param.id,
-                label: paramName,
-                default: typeof param.defaultValue === "boolean" ? param.defaultValue : false,
-            };
-            return input;
-        }
-        case "dropdown": {
-            const choices = getChoices(param, setRequest.requestType, ssInstance.options);
-            const input: CompanionInputFieldDropdown = {
-                type: "dropdown",
-                id: param.id,
-                label: `${paramName}${param.property === "required" ? " (required)" : ""}`,
-                choices,
-                default: DEFAULT_CHOICE_ID,
-            };
-            return input;
-        }
-    }
-};
+import { DEFAULT_CHOICE_ID, getInput } from "./inputs";
 
 const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstance) => {
     return (action: CompanionActionEvent, _context: CompanionCommonCallbackContext) => {

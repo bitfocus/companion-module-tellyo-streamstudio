@@ -7,7 +7,7 @@ import {
 } from "@companion-module/base";
 import { Config, getConfigFields } from "./config";
 import { Option, Options } from "./types/options";
-import generateActions, { getParameterTopic } from "./actions";
+import generateActions from "./actions";
 import generateFeedbacks from "./feedbacks";
 import { ListenedUpdates } from "./types/updates";
 import { ApiDefinition, Request } from "./types/apiDefinition";
@@ -15,6 +15,7 @@ import { generatePresets } from "./presets";
 import { CompanionControlType, ActionsState, FeedbacksState } from "./types/stateStore";
 import { StreamStudioClient } from "./studioApiClient";
 import apiDefinition from "./apiDefinitions.json";
+import { getParameterTopic } from "./inputs";
 
 const RECONNECT_INTERVAL_IN_MS = 2000;
 
