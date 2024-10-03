@@ -68,11 +68,10 @@ const getInput = <T>(
     ssInstance: StreamStudioInstance
 ): SomeCompanionActionInputField => {
     const inputType = commandParameterTypeToInputType(param.type);
+    const paramName = param.prettyName || param.id;
     switch (inputType) {
         case "number": {
-            const label = param.range
-                ? `${param.prettyName} (min ${param.range.min}, max ${param.range.max})`
-                : param.prettyName;
+            const label = param.range ? `${paramName} (min ${param.range.min}, max ${param.range.max})` : paramName;
             const input: CompanionInputFieldNumber = {
                 type: "number",
                 id: param.id,
@@ -87,7 +86,7 @@ const getInput = <T>(
             const input: CompanionInputFieldTextInput = {
                 type: "textinput",
                 id: param.id,
-                label: param.prettyName,
+                label: paramName,
                 default: typeof param.defaultValue === "string" ? param.defaultValue : undefined,
             };
             return input;
@@ -96,7 +95,7 @@ const getInput = <T>(
             const input: CompanionInputFieldCheckbox = {
                 type: "checkbox",
                 id: param.id,
-                label: param.prettyName,
+                label: paramName,
                 default: typeof param.defaultValue === "boolean" ? param.defaultValue : false,
             };
             return input;
@@ -106,7 +105,7 @@ const getInput = <T>(
             const input: CompanionInputFieldDropdown = {
                 type: "dropdown",
                 id: param.id,
-                label: `${param.prettyName}${param.property === "required" ? " (required)" : ""}`,
+                label: `${paramName}${param.property === "required" ? " (required)" : ""}`,
                 choices,
                 default: DEFAULT_CHOICE_ID,
             };
