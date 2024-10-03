@@ -184,12 +184,14 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
 
             let hasControllableBooleanParam = false;
             let hasControllableNumberParam = false;
+            const hasControllerModeParam = requestParams?.find((param) => param.id === "controllerMode");
 
             const options: SomeCompanionActionInputField[] = [];
+
             requestParams?.forEach((param) => {
                 const { type, property, id } = param;
 
-                if (["controllable", "required"].includes(property)) {
+                if (hasControllerModeParam && ["controllable", "required"].includes(property)) {
                     if (type === "number") {
                         hasControllableNumberParam = true;
                         return;
