@@ -188,6 +188,15 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
 
             const options: SomeCompanionActionInputField[] = [];
 
+            if (request.doc_request_description) {
+                options.push({
+                    id: "description",
+                    type: "static-text",
+                    label: "Description",
+                    value: request.doc_request_description,
+                });
+            }
+
             requestParams?.forEach((param) => {
                 const { type, property, id } = param;
 
