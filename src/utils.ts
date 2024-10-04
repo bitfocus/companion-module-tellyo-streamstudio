@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { ParameterType } from "./types/apiDefinition";
+import { APPLICATION_NAME } from "./index";
 
 export const transformDotCaseToTitleCase = (text: string) => {
     return text
@@ -21,7 +22,7 @@ export const commandParameterTypeToInputType = (type: ParameterType) => {
     }
 };
 
-export const generateMessageId = () => `COMPANION_MODULE_TELLYO_STREAMSTUDIO_${uuidv4()}`;
+export const generateMessageId = () => `${APPLICATION_NAME}_${uuidv4()}`;
 
 export const trimText = (text: string, _length: number) => {
     return text;

@@ -16,8 +16,12 @@ import { CompanionControlType, ActionsState, FeedbacksState } from "./types/stat
 import { StreamStudioClient } from "./studioApiClient";
 import apiDefinition from "./apiDefinitions.json";
 import { getParameterTopic } from "./inputs";
+import { generateMessageId } from "./utils";
+import { v4 as uuidv4 } from "uuid";
 
 const RECONNECT_INTERVAL_IN_MS = 2000;
+const PING_INTERVAL_IN_MS = 5000;
+export const APPLICATION_NAME = "COMPANION_MODULE_TELLYO_STREAMSTUDIO";
 
 class StreamStudioInstance extends InstanceBase<Config> {
     public options: Options = {};
@@ -32,6 +36,8 @@ class StreamStudioInstance extends InstanceBase<Config> {
     private reconnectTimeout: NodeJS.Timeout | null = null;
     public actionsState: ActionsState = {};
     public feedbacksState: FeedbacksState = {};
+    private sessionId = "";
+    private pingInterval: NodeJS.Timeout | null = null;
 
     constructor(internal: unknown) {
         super(internal);
@@ -92,7 +98,9 @@ class StreamStudioInstance extends InstanceBase<Config> {
 
     // ACTIONS / FEEDBACKS / PRESETS MANAGEMENT
     private onConnection = () => {
+        this.sessionId = uuidv4();
         this.log("debug", "Connected.");
+        this.sendHello();
         this.updateStatus(InstanceStatus.Ok);
         this.refreshAll();
         this.subscribeActions();
@@ -104,6 +112,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
         this.updateFeedbacks();
         this.checkFeedbacks();
         generatePresets();
+        this.createVariables();
     };
 
     // AUTO-RECONNECTING
@@ -116,6 +125,10 @@ class StreamStudioInstance extends InstanceBase<Config> {
 
     private startReconnecting = async () => {
         this.reconnectTimeout = setTimeout(async () => {
+            if (this.pingInterval) {
+                clearInterval(this.pingInterval);
+                this.pingInterval = null;
+            }
             this.log("debug", `Reconnecting...`);
             this.updateStatus(InstanceStatus.Disconnected, "Trying to reconnect");
             try {
@@ -251,6 +264,39 @@ class StreamStudioInstance extends InstanceBase<Config> {
         }
     };
 
+    private sendHello = () => {
+        const message = {
+            "request-type": "session.hello.set",
+            "message-id": generateMessageId(),
+            applicationId: this.sessionId,
+            applicationName: APPLICATION_NAME,
+        };
+        this.client
+            .send(message)
+            .then((res) => {
+                this.log("debug", `Got hello request response: ${JSON.stringify(res)}`);
+            })
+            .catch((e) => {
+                this.log("error", JSON.stringify(e));
+            });
+        this.pingInterval = setInterval(() => {
+            const startTimestamp = Date.now();
+            this.client
+                .send({
+                    "request-type": "session.ping",
+                    "message-id": generateMessageId(),
+                    clientTs: Date.now(),
+                })
+                .then((res) => {
+                    this.log("debug", `Got ping request response: ${JSON.stringify(res)}`);
+                    this.setVariableValues({ latency: Date.now() - startTimestamp });
+                })
+                .catch((e) => {
+                    this.log("error", JSON.stringify(e));
+                });
+        }, PING_INTERVAL_IN_MS);
+    };
+
     // WEBSOCKET COMMUNICATION WRAPPERS
     private cancelUnnecessaryNotifications = () => {
         // can't cancel MediaProgressNotify, because it keeps the connection alive
@@ -274,8 +320,12 @@ class StreamStudioInstance extends InstanceBase<Config> {
     private updateFeedbacks = () => {
         this.setFeedbackDefinitions(generateFeedbacks(this));
     };
+
+    private createVariables = () => {
+        this.setVariableDefinitions([{ variableId: "latency", name: "Latency to Stream Studio producer" }]);
+    };
 }
 
-export = StreamStudioInstance;
+export default StreamStudioInstance;
 
 runEntrypoint(StreamStudioInstance, []);
