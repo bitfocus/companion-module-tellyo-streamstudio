@@ -152,13 +152,6 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                 subscribe: (action: CompanionActionInfo) => {
                     request?.requestParams?.forEach((param) => {
                         if (param.type === "boolean" && ["controllable", "required"].includes(param.property)) {
-                            if (!getRequest) {
-                                ssInstance.log(
-                                    "error",
-                                    `Request ${request.requestType} has boolean controllable param, but no get request.`
-                                );
-                                return;
-                            }
                             // Add state entry
                             ssInstance.actionsState[action.controlId] = {
                                 requestType: request.requestType,
@@ -169,7 +162,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
 
                             // Get initial value
                             const message: Record<string, InputValue> = {
-                                "request-type": getRequest.requestType,
+                                "request-type": getRequest?.requestType || "",
                             };
                             let areAllParametersSet = true;
                             request.requestParams?.forEach((param) => {
