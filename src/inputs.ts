@@ -38,7 +38,7 @@ const convertParamOptionsToChoices = <T>(options: Option[] | T[]): DropdownChoic
         ...options.map((option) => {
             const typedOption = option as Option;
             return {
-                id: typeof typedOption.id === "undefined" ? "undefined" : typedOption.id,
+                id: typedOption.id,
                 label: typedOption.value,
             };
         }),
