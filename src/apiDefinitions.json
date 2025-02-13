@@ -1,4 +1,156 @@
 {
+  "frontend": [
+    {
+      "hidden": true,
+      "pretty_name": "Get audiomixer frontend settings",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"frontend.audiomixer.settings.get\",\n            \"values\":[\"projectName\"]\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "frontend.audiomixer.settings.get",
+      "requestParams": [
+        {
+          "id": "values",
+          "property": "optional",
+          "prettyName": "values",
+          "type": "array of strings"
+        }
+      ],
+      "responseParams": [
+        {
+          "id": "audioMixer",
+          "property": "required",
+          "prettyName": "AudioMixer data",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Set audiomixer frontend settings",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"frontend.audiomixer.settings.set\",\n            \"values\": {\"projectName\": \"New Project Name\"}\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "frontend.audiomixer.settings.set",
+      "requestParams": [
+        {
+          "id": "values",
+          "property": "optional",
+          "prettyName": "values",
+          "type": "object"
+        }
+      ],
+      "responseParams": [
+        {
+          "id": "audioMixer",
+          "property": "required",
+          "prettyName": "AudioMixer data",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Get keyboard shortcuts data",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"frontend.keyboard-shortcuts.settings.get\",\n            \"values\":[\"actions\"]\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "frontend.keyboard-shortcuts.settings.get",
+      "requestParams": [
+        {
+          "id": "values",
+          "property": "optional",
+          "prettyName": "values",
+          "type": "array of strings"
+        }
+      ],
+      "responseParams": [
+        {
+          "id": "keyboardShortcuts",
+          "property": "required",
+          "prettyName": "Keyboard shortcuts data",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Set keyboard shortcuts data",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"frontend.keyboard-shortcuts.settings.set\",\n            \"values\": {\"projectName\": \"New Project Name\"}\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "frontend.keyboard-shortcuts.settings.set",
+      "requestParams": [
+        {
+          "id": "values",
+          "property": "required",
+          "prettyName": "values",
+          "type": "object"
+        }
+      ],
+      "responseParams": [
+        {
+          "id": "keyboardShortcuts",
+          "property": "required",
+          "prettyName": "Keyboard shortcuts data",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Get producer frontend settings",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"frontend.producer.settings.get\",\n            \"values\":[\"projectName\"]\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "frontend.producer.settings.get",
+      "requestParams": [
+        {
+          "id": "values",
+          "property": "optional",
+          "prettyName": "values",
+          "type": "array of strings"
+        }
+      ],
+      "responseParams": [
+        {
+          "id": "producer",
+          "property": "required",
+          "prettyName": "Producer data",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Get or update producer project",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"frontend.producer.settings.set\",\n            \"values\": {\"projectName\": \"New Project Name\"}\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "frontend.producer.settings.set",
+      "requestParams": [
+        {
+          "id": "values",
+          "property": "required",
+          "prettyName": "values",
+          "type": "object"
+        }
+      ],
+      "responseParams": [
+        {
+          "id": "producer",
+          "property": "required",
+          "prettyName": "Producer data",
+          "type": "object"
+        }
+      ]
+    }
+  ],
   "audiomixer.channel": [
     {
       "pretty_name": "Add empty audio channel",
@@ -389,6 +541,17 @@
           "type": "boolean"
         },
         {
+          "id": "output",
+          "property": "optional",
+          "values": [
+            "CTRL ROOM",
+            "PRODUCER",
+            "MULTIVIEW"
+          ],
+          "prettyName": "Output",
+          "type": "select"
+        },
+        {
           "id": "controllerMode",
           "property": "optional",
           "values": [
@@ -600,7 +763,90 @@
       "responseParams": []
     }
   ],
+  "audiomixer.backend.debuger": [
+    {
+      "pretty_name": "",
+      "hidden": true,
+      "doc_request_description": "",
+      "doc_response_description": "",
+      "requestType": "audiomixer.backend.debuger.ardour.validate",
+      "requestParams": [],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "hidden": true,
+      "doc_request_description": "",
+      "doc_response_description": "",
+      "requestType": "audiomixer.backend.debuger.mappings.get",
+      "requestParams": [],
+      "responseParams": [
+        {
+          "id": "mappings",
+          "property": "optional",
+          "prettyName": "mappings",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "pretty_name": "",
+      "hidden": true,
+      "doc_request_description": "",
+      "doc_response_description": "",
+      "requestType": "audiomixer.backend.debuger.state.get",
+      "requestParams": [],
+      "responseParams": [
+        {
+          "id": "state",
+          "property": "optional",
+          "prettyName": "state",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "pretty_name": "",
+      "hidden": true,
+      "doc_request_description": "",
+      "doc_response_description": "",
+      "requestType": "audiomixer.debuger.audit",
+      "requestParams": [],
+      "responseParams": []
+    }
+  ],
   "audiomixer.outputs": [
+    {
+      "hidden": true,
+      "pretty_name": "Add audio output",
+      "doc_request_description": "Adds new audio output (AUX)",
+      "doc_request_example": "\n        {\n            \"message-id\":\"d\",\n            \"request-type\":\"audiomixer.outputs.add\",\n            \"output\":\"auxoweewww\"\n        }",
+      "doc_response_description": "All audio outputs",
+      "doc_response_example": "",
+      "requestType": "audiomixer.outputs.add",
+      "requestParams": [
+        {
+          "id": "output",
+          "property": "required",
+          "prettyName": "New output unique name",
+          "type": "string"
+        },
+        {
+          "id": "displayName",
+          "property": "optional",
+          "prettyName": "New output display name",
+          "type": "string"
+        }
+      ],
+      "responseParams": [
+        {
+          "id": "audioOutput",
+          "property": "required",
+          "prettyName": "Audio output settings",
+          "type": "object"
+        }
+      ]
+    },
     {
       "pretty_name": "Copy audio output settings",
       "doc_request_description": "Copies all settings from `srcOutput` to `dstAudioOutput`",
@@ -845,6 +1091,23 @@
         }
       ],
       "responseParams": []
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Remove audio output",
+      "doc_request_description": "Removes audio output. Main audio output cannot be removed",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"audiomixer.outputs.remove\",\n            \"output\":\"auxowe\"\n        }",
+      "doc_response_description": "All audio outputs state",
+      "doc_response_example": "",
+      "requestType": "audiomixer.outputs.remove",
+      "requestParams": [
+        {
+          "id": "output",
+          "property": "required",
+          "prettyName": "Audio output",
+          "type": "AudioOutputName"
+        }
+      ]
     },
     {
       "pretty_name": "Reset audio output settings",
@@ -1259,7 +1522,7 @@
   ],
   "audiomixer.plugins": [
     {
-      "pretty_name": "",
+      "pretty_name": "Get plugin enable state",
       "doc_request_description": "",
       "doc_response_description": "",
       "requestType": "audiomixer.plugins.enabled.get",
@@ -1337,7 +1600,7 @@
       ]
     },
     {
-      "pretty_name": "",
+      "pretty_name": "Get plugin parameter value",
       "doc_request_description": "",
       "doc_response_description": "",
       "requestType": "audiomixer.plugins.parameter.get",
@@ -1639,6 +1902,22 @@
   ],
   "general": [
     {
+      "hidden": true,
+      "pretty_name": "(internal) Initialize producer",
+      "doc_request_description": "",
+      "doc_response_description": "",
+      "requestType": "Initialize",
+      "requestParams": []
+    },
+    {
+      "hidden": true,
+      "pretty_name": "(internal) Restart VIDEO Backend",
+      "doc_request_description": "",
+      "doc_response_description": "",
+      "requestType": "RestartOBS",
+      "requestParams": []
+    },
+    {
       "pretty_name": "",
       "doc_request_description": "",
       "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"config.get\"\n        }",
@@ -1708,6 +1987,42 @@
       "requestParams": []
     },
     {
+      "hidden": true,
+      "pretty_name": "Turn notifications on",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "notification.subscribe",
+      "requestParams": [
+        {
+          "id": "notyficationType",
+          "property": "required",
+          "prettyName": "Notification type",
+          "type": "string"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Turn notifications off",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "notification.unsubscribe",
+      "requestParams": [
+        {
+          "id": "notyficationType",
+          "property": "required",
+          "prettyName": "Notification type",
+          "type": "string"
+        }
+      ],
+      "responseParams": []
+    },
+    {
       "pretty_name": "Reload Live Production",
       "doc_request_description": "",
       "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"reload.set\",\n        }",
@@ -1728,6 +2043,16 @@
           "type": "boolean"
         }
       ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Set inactivity status on",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"status.activity.on\",\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "status.activity.on",
+      "requestParams": []
     }
   ],
   "guests": [
@@ -1991,6 +2316,631 @@
           },
           "prettyName": "Slot index",
           "type": "number"
+        }
+      ],
+      "responseParams": []
+    }
+  ],
+  "outputs": [
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.approve",
+      "requestParams": [],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.audio.stream.add",
+      "requestParams": [
+        {
+          "id": "displayName",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "source",
+          "property": "optional",
+          "prettyName": "",
+          "type": "AudioOutputName"
+        },
+        {
+          "id": "bitrate",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 99999999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "sampleRate",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 99999999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "codec",
+          "property": "optional",
+          "values": [
+            "aac",
+            "ac3",
+            "mp2"
+          ],
+          "prettyName": "",
+          "type": "select"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.audio.stream.remove",
+      "requestParams": [
+        {
+          "id": "id",
+          "property": "required",
+          "prettyName": "",
+          "type": "string"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.audio.stream.update",
+      "requestParams": [
+        {
+          "id": "id",
+          "property": "required",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "displayName",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "source",
+          "property": "optional",
+          "prettyName": "",
+          "type": "AudioOutputName"
+        },
+        {
+          "id": "bitrate",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 99999999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "sampleRate",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 99999999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "codec",
+          "property": "optional",
+          "values": [
+            "aac",
+            "ac3",
+            "mp2"
+          ],
+          "prettyName": "",
+          "type": "select"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "Setup general output",
+      "doc_request_description": "Sets the main resolution of the project and frame rate.",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.general.setup",
+      "requestParams": [
+        {
+          "id": "mainResolution",
+          "property": "optional",
+          "values": [
+            "720",
+            "1080"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "mainFrameRate",
+          "property": "optional",
+          "values": [
+            "23.98",
+            "24",
+            "25",
+            "29.97",
+            "30",
+            "i23.98",
+            "i24",
+            "i25",
+            "i29.97",
+            "i30",
+            "50",
+            "59.94",
+            "60"
+          ],
+          "prettyName": "",
+          "type": "select"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.output.add",
+      "requestParams": [
+        {
+          "id": "displayName",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "audioStreams",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "videoStream",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "closedCaptionEnabled",
+          "property": "optional",
+          "prettyName": "",
+          "type": "boolean"
+        },
+        {
+          "id": "scte35",
+          "property": "optional",
+          "prettyName": "",
+          "type": "boolean"
+        },
+        {
+          "id": "cbr",
+          "property": "optional",
+          "prettyName": "",
+          "type": "boolean"
+        },
+        {
+          "id": "videoPid",
+          "property": "optional",
+          "range": {
+            "min": 1,
+            "max": 9999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "scte35Pid",
+          "property": "optional",
+          "range": {
+            "min": 1,
+            "max": 9999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "audioPids",
+          "property": "optional",
+          "prettyName": "",
+          "type": "array"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.output.remove",
+      "requestParams": [
+        {
+          "id": "id",
+          "property": "required",
+          "prettyName": "",
+          "type": "string"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.output.update",
+      "requestParams": [
+        {
+          "id": "id",
+          "property": "required",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "displayName",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "audioStreams",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "videoStream",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "closedCaptionEnabled",
+          "property": "optional",
+          "prettyName": "",
+          "type": "boolean"
+        },
+        {
+          "id": "scte35",
+          "property": "optional",
+          "prettyName": "",
+          "type": "boolean"
+        },
+        {
+          "id": "cbr",
+          "property": "optional",
+          "prettyName": "",
+          "type": "boolean"
+        },
+        {
+          "id": "videoPid",
+          "property": "optional",
+          "range": {
+            "min": 1,
+            "max": 9999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "scte35Pid",
+          "property": "optional",
+          "range": {
+            "min": 1,
+            "max": 9999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "audioPids",
+          "property": "optional",
+          "prettyName": "",
+          "type": "array"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "Get list of defined outputs",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.state.get",
+      "requestParams": [],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "Get configuration of defined outputs",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.supported.media.options.get",
+      "requestParams": [],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.video.stream.add",
+      "requestParams": [
+        {
+          "id": "displayName",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "source",
+          "property": "optional",
+          "values": [
+            "dirty1",
+            "clean"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "aspectRatio",
+          "property": "optional",
+          "values": [
+            "16:9",
+            "9:16",
+            "4:5",
+            "1:1"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "videoCodec",
+          "property": "optional",
+          "values": [
+            "H264",
+            "H265"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "videoFormat",
+          "property": "optional",
+          "values": [
+            "720p23.98",
+            "1080p23.98",
+            "720p24",
+            "1080p24",
+            "720p25",
+            "1080p25",
+            "720p29.97",
+            "1080p29.97",
+            "720p30",
+            "1080p30",
+            "720i23.98",
+            "1080i23.98",
+            "720i24",
+            "1080i24",
+            "720i25",
+            "1080i25",
+            "720i29.97",
+            "1080i29.97",
+            "720i30",
+            "1080i30",
+            "720p50",
+            "1080p50",
+            "720p59.94",
+            "1080p59.94",
+            "720p60",
+            "1080p60"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "bitrate",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 99999999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "gop",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 100
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "closedCaption",
+          "property": "optional",
+          "values": [
+            "off",
+            "708",
+            "608"
+          ],
+          "prettyName": "",
+          "type": "select"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.video.stream.remove",
+      "requestParams": [
+        {
+          "id": "id",
+          "property": "required",
+          "prettyName": "",
+          "type": "string"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "outputs.video.stream.update",
+      "requestParams": [
+        {
+          "id": "id",
+          "property": "required",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "displayName",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "source",
+          "property": "optional",
+          "values": [
+            "dirty1",
+            "clean"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "aspectRatio",
+          "property": "optional",
+          "values": [
+            "16:9",
+            "9:16",
+            "4:5",
+            "1:1"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "videoCodec",
+          "property": "optional",
+          "values": [
+            "H264",
+            "H265"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "videoFormat",
+          "property": "optional",
+          "values": [
+            "720p23.98",
+            "1080p23.98",
+            "720p24",
+            "1080p24",
+            "720p25",
+            "1080p25",
+            "720p29.97",
+            "1080p29.97",
+            "720p30",
+            "1080p30",
+            "720i23.98",
+            "1080i23.98",
+            "720i24",
+            "1080i24",
+            "720i25",
+            "1080i25",
+            "720i29.97",
+            "1080i29.97",
+            "720i30",
+            "1080i30",
+            "720p50",
+            "1080p50",
+            "720p59.94",
+            "1080p59.94",
+            "720p60",
+            "1080p60"
+          ],
+          "prettyName": "",
+          "type": "select"
+        },
+        {
+          "id": "bitrate",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 99999999
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "gop",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 100
+          },
+          "prettyName": "",
+          "type": "number"
+        },
+        {
+          "id": "closedCaption",
+          "property": "optional",
+          "values": [
+            "off",
+            "708",
+            "608"
+          ],
+          "prettyName": "",
+          "type": "select"
         }
       ],
       "responseParams": []
@@ -2284,7 +3234,7 @@
       ]
     },
     {
-      "pretty_name": "Play playlist source.",
+      "pretty_name": " ",
       "doc_request_description": "Playlist name, source name and playout index have to be given.",
       "doc_request_example": "{\n            message-id: \"id-4fe183cf-3de1-1c16-960f-2bf21c56a513\",\n            playlistName: \"playlist-d2bc486e-1150-6dba-79fe-e2ca40e59a08\",\n            playout: 0,\n            request-type: \"playouts.playlists.sources.play\",\n            sourceName: \"playlist-source-1fcac9f6-4c53-0136-eff8-5e521ab33f1d\",\n            trackingData: {\n                applicationId: \"id-0b750bfc-a748-06ec-5dc2-18ca904c87db\",\n                applicationName: \"PLAYOUTS\",\n                ts: 1702987231507,\n                uiElement: \"unkown\",\n                userId: 100000629\n            }\n        }",
       "doc_response_description": "Current state of playouts and the status of the request is returned.",
@@ -2486,8 +3436,8 @@
       ]
     },
     {
-      "pretty_name": "Set audio monitor channel",
-      "doc_request_description": "",
+      "pretty_name": "Set audio monitor channel [deprecated]",
+      "doc_request_description": "Deprecated. Instead use:\n{\n    \"request-type\": \"audiomixer.channel.pfl.set\",\n    \"message-id\": \"id-c8642a4b-6025-0283-bc3d-338b80fe0f40\",\n    \"audioChannel\": \"PREVIEW\",\n    \"on\": true,\n    \"output\": \"PRODUCER\"\n}\n\nto monitor preview or to monitor back program\n\n{\n    \"request-type\": \"audiomixer.channel.pfl.set\",\n    \"message-id\": \"id-c8642a4b-6025-0283-bc3d-338b80fe0f40\",\n    \"audioChannel\": \"PREVIEW\",\n    \"on\": false,\n    \"output\": \"PRODUCER\"\n}\n\nIf other sources are monitored on PRODUCER then all need to be turned off to go back to only program audio.\n        ",
       "doc_request_example": "",
       "doc_response_description": "",
       "doc_response_example": "",
@@ -4518,6 +5468,40 @@
           "type": "object"
         }
       ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Save project",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"project.set\",\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "project.set",
+      "requestParams": [
+        {
+          "id": "project",
+          "property": "required",
+          "prettyName": "",
+          "type": "object"
+        }
+      ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "Update project",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"project.update\",\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "project.update",
+      "requestParams": [
+        {
+          "id": "data",
+          "property": "required",
+          "prettyName": "",
+          "type": "object"
+        }
+      ]
     }
   ],
   "replays": [
@@ -4546,6 +5530,16 @@
       ]
     },
     {
+      "hidden": true,
+      "pretty_name": "(Interanl) Dump replays state",
+      "doc_request_description": "",
+      "doc_request_example": "\n        {\n            \"message-id\":\"d\",\n            \"request-type\":\"replays.dump\"\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "replays.dump",
+      "requestParams": []
+    },
+    {
       "pretty_name": "",
       "doc_request_description": "",
       "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"replays.get\",\n        }",
@@ -4561,6 +5555,16 @@
           "type": "object"
         }
       ]
+    },
+    {
+      "hidden": true,
+      "pretty_name": "(Interanl) Initialize replays",
+      "doc_request_description": "",
+      "doc_request_example": "\n        {\n            \"message-id\":\"d\",\n            \"request-type\":\"replays.initialize\"\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "replays.initialize",
+      "requestParams": []
     },
     {
       "pretty_name": "Show original source on the output",
@@ -5080,6 +6084,72 @@
           "property": "optional",
           "prettyName": "Should the marker be auto?",
           "type": "boolean"
+        }
+      ]
+    }
+  ],
+  "session": [
+    {
+      "hidden": true,
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"session.sessions.get\",\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "session.sessions.get",
+      "requestParams": []
+    },
+    {
+      "hidden": false,
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"session.hello.set\",\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "session.hello.set",
+      "requestParams": [
+        {
+          "id": "applicationId",
+          "property": "optional",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "applicationName",
+          "property": "required",
+          "prettyName": "",
+          "type": "string"
+        },
+        {
+          "id": "userId",
+          "property": "required",
+          "range": {
+            "min": 0,
+            "max": 1.7976931348623157e+308
+          },
+          "prettyName": "",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "hidden": false,
+      "pretty_name": "",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\":\"session.ping\",\n        }",
+      "doc_response_description": "",
+      "doc_response_example": "",
+      "requestType": "session.ping",
+      "requestParams": [
+        {
+          "id": "clientTs",
+          "property": "required",
+          "range": {
+            "min": 0,
+            "max": 1.7976931348623157e+308
+          },
+          "prettyName": "",
+          "type": "number"
         }
       ]
     }
@@ -5706,10 +6776,10 @@
   ],
   "timer": [
     {
-      "pretty_name": "Get timer state",
+      "pretty_name": "Returns a list of defined timers.",
       "doc_request_description": "",
-      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\": \"timer.get\"\n        }",
-      "doc_response_example": "",
+      "doc_request_example": "{\n            \"request-type\": \"timer.get\",\n            \"message-id\": \"gwint_53f82053-d164-cbae-2816-20a144708569\"\n        }",
+      "doc_response_example": "{\n            \"timerActions\": [],\n            \"timers\": [\n                {\n                    \"id\": \"timer-7ca0d30e-8a83-ec81-b2f5-f5fd7ce046d5\",\n                    \"mode\": \"DOWN\",\n                    \"hours\": 0,\n                    \"minutes\": 1,\n                    \"seconds\": 5,\n                    \"state\": \"STOPPED\",\n                    \"displayName\": \"abc\",\n                    \"lastAction\": {\n                        \"timerId\": \"timer-7ca0d30e-8a83-ec81-b2f5-f5fd7ce046d5\",\n                        \"timeIso\": \"2024-05-17T11:32:26.515Z\",\n                        \"type\": \"STOP\"\n                    }\n                }\n            ],\n            \"status\": \"ok\",\n            \"message-id\": \"gwint_53f82053-d164-cbae-2816-20a144708569\"\n        }",
       "doc_response_description": "",
       "requestType": "timer.get",
       "requestParams": [],
@@ -5727,16 +6797,33 @@
           "id": "timerId",
           "property": "required",
           "prettyName": "Timer ID",
-          "type": "string"
+          "type": "TimerId"
         }
       ],
       "responseParams": []
     },
     {
-      "pretty_name": "Reset timer",
+      "pretty_name": "Remove particular timerr",
       "doc_request_description": "",
-      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\": \"timer.reset\"\n        }",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\": \"timer.remove\",\n            \"timerId\": \"timer-1234\"\n        }",
       "doc_response_example": "",
+      "doc_response_description": "",
+      "requestType": "timer.remove",
+      "requestParams": [
+        {
+          "id": "timerId",
+          "property": "required",
+          "prettyName": "Timer ID",
+          "type": "TimerId"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "Resets the state of the selected timer",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"request-type\": \"timer.reset\",\n            \"timerId\": \"timer-7ca0d30e-8a83-ec81-b2f5-f5fd7ce046d5\",\n            \"message-id\": \"gwint_1b56ef63-184f-7492-1c71-4b58c125d5e4\"\n        }",
+      "doc_response_example": "{\n            \"status\": \"ok\",\n            \"message-id\": \"gwint_1b56ef63-184f-7492-1c71-4b58c125d5e4\"\n        }",
       "doc_response_description": "",
       "requestType": "timer.reset",
       "requestParams": [
@@ -5744,16 +6831,33 @@
           "id": "timerId",
           "property": "required",
           "prettyName": "Timer ID",
-          "type": "string"
+          "type": "TimerId"
         }
       ],
       "responseParams": []
     },
     {
-      "pretty_name": "Create new timer",
+      "pretty_name": "Resume timer",
       "doc_request_description": "",
-      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\": \"timer.set\"\n        }",
+      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\": \"timer.resume\"\n        }",
       "doc_response_example": "",
+      "doc_response_description": "",
+      "requestType": "timer.resume",
+      "requestParams": [
+        {
+          "id": "timerId",
+          "property": "required",
+          "prettyName": "Timer ID",
+          "type": "TimerId"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "Create a new timer",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"request-type\": \"timer.set\",\n            \"displayName\": \"Name\",\n            \"mode\": \"UP\",\n            \"hours\": 0,\n            \"minutes\": 0,\n            \"seconds\": 30,\n            \"message-id\": \"gwint_16c9bfb3-4045-4eaf-63a2-39b1c7df20cb\"\n        }",
+      "doc_response_example": "{\n            \"timer\": {\n                \"id\": \"timer-e763ea7f-1406-8a87-8770-69ac05f4bc23\",\n                \"mode\": \"UP\",\n                \"hours\": 0,\n                \"minutes\": 0,\n                \"seconds\": 30,\n                \"state\": \"STOPPED\",\n                \"displayName\": \"Name\",\n                \"lastAction\": null\n            },\n            \"status\": \"ok\",\n            \"message-id\": \"gwint_16c9bfb3-4045-4eaf-63a2-39b1c7df20cb\"\n        }",
       "doc_response_description": "",
       "requestType": "timer.set",
       "requestParams": [
@@ -5766,8 +6870,13 @@
         {
           "id": "mode",
           "property": "required",
-          "prettyName": "CLOCK, UP, DOWN",
-          "type": "string"
+          "values": [
+            "CLOCK",
+            "UP",
+            "DOWN"
+          ],
+          "prettyName": "Timer mode",
+          "type": "select"
         },
         {
           "id": "hours",
@@ -5776,7 +6885,7 @@
             "min": 0,
             "max": 23
           },
-          "prettyName": "",
+          "prettyName": "Hours",
           "type": "number"
         },
         {
@@ -5786,7 +6895,7 @@
             "min": 0,
             "max": 59
           },
-          "prettyName": "",
+          "prettyName": "Minutes",
           "type": "number"
         },
         {
@@ -5796,7 +6905,7 @@
             "min": 0,
             "max": 59
           },
-          "prettyName": "",
+          "prettyName": "Seconds",
           "type": "number"
         }
       ],
@@ -5805,8 +6914,8 @@
     {
       "pretty_name": "Start timer",
       "doc_request_description": "",
-      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\": \"timer.start\"\n        }",
-      "doc_response_example": "",
+      "doc_request_example": "{\n            \"request-type\": \"timer.start\",\n            \"timerId\": \"timer-30b42801-ef2f-4f9c-111c-b679a9dc8daa\",\n            \"message-id\": \"gwint_ee117b01-af99-92ad-fbe8-61b99ef2d630\"\n        }",
+      "doc_response_example": "{\n            \"timerId\": \"timer-30b42801-ef2f-4f9c-111c-b679a9dc8daa\",\n            \"message-id\": \"gwint_ee117b01-af99-92ad-fbe8-61b99ef2d630\",\n            \"status\": \"ok\",\n            \"update-type\": \"timer.start\"\n        }",
       "doc_response_description": "",
       "requestType": "timer.start",
       "requestParams": [
@@ -5814,7 +6923,7 @@
           "id": "timerId",
           "property": "required",
           "prettyName": "Timer ID",
-          "type": "string"
+          "type": "TimerId"
         }
       ],
       "responseParams": []
@@ -5822,8 +6931,8 @@
     {
       "pretty_name": "Stop timer",
       "doc_request_description": "",
-      "doc_request_example": "{\n            \"message-id\":\"d\",\n            \"request-type\": \"timer.stop\"\n        }",
-      "doc_response_example": "",
+      "doc_request_example": "{\n            \"request-type\": \"timer.stop\",\n            \"timerId\": \"timer-30b42801-ef2f-4f9c-111c-b679a9dc8daa\",\n            \"message-id\": \"gwint_ee117b01-af99-92ad-fbe8-61b99ef2d630\"\n        }",
+      "doc_response_example": "{\n            \"timerId\": \"timer-30b42801-ef2f-4f9c-111c-b679a9dc8daa\",\n            \"message-id\": \"gwint_ee117b01-af99-92ad-fbe8-61b99ef2d630\",\n            \"status\": \"ok\",\n            \"update-type\": \"timer.stop\"\n        }",
       "doc_response_description": "",
       "requestType": "timer.stop",
       "requestParams": [
@@ -5831,7 +6940,71 @@
           "id": "timerId",
           "property": "required",
           "prettyName": "Timer ID",
+          "type": "TimerId"
+        }
+      ],
+      "responseParams": []
+    },
+    {
+      "pretty_name": "Update timer",
+      "doc_request_description": "",
+      "doc_request_example": "{\n            \"request-type\": \"timer.update\",\n            \"timerId\": \"timer-30b42801-ef2f-4f9c-111c-b679a9dc8daa\",\n            \"displayName\": \"Name\",\n            \"mode\": \"UP\",\n            \"hours\": 0,\n            \"minutes\": 0,\n            \"seconds\": 30,\n            \"message-id\": \"gwint_16c9bfb3-4045-4eaf-63a2-39b1c7df20cb\"\n        }",
+      "doc_response_example": "",
+      "doc_response_description": "",
+      "requestType": "timer.update",
+      "requestParams": [
+        {
+          "id": "timerId",
+          "property": "required",
+          "prettyName": "Timer ID",
+          "type": "TimerId"
+        },
+        {
+          "id": "displayName",
+          "property": "optional",
+          "prettyName": "Human readable name",
           "type": "string"
+        },
+        {
+          "id": "mode",
+          "property": "optional",
+          "values": [
+            "CLOCK",
+            "UP",
+            "DOWN"
+          ],
+          "prettyName": "Timer mode",
+          "type": "select"
+        },
+        {
+          "id": "hours",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 23
+          },
+          "prettyName": "Hours",
+          "type": "number"
+        },
+        {
+          "id": "minutes",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 59
+          },
+          "prettyName": "Minutes",
+          "type": "number"
+        },
+        {
+          "id": "seconds",
+          "property": "optional",
+          "range": {
+            "min": 0,
+            "max": 59
+          },
+          "prettyName": "Seconds",
+          "type": "number"
         }
       ],
       "responseParams": []
