@@ -154,7 +154,6 @@ const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackD
                 },
                 unsubscribe: (feedback: CompanionFeedbackInfo) => {
                     ssInstance.removeListenedUpdate(feedback.controlId);
-                    ssInstance.removeListenedUpdate(feedback.controlId);
                     delete ssInstance.feedbacksState[feedback.controlId];
                 },
             };

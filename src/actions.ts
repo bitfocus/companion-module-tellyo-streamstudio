@@ -2,7 +2,6 @@ import {
     CompanionActionDefinition,
     CompanionActionDefinitions,
     CompanionActionEvent,
-    CompanionActionInfo,
     CompanionOptionValues,
     InputValue,
     SomeCompanionActionInputField,
@@ -10,9 +9,8 @@ import {
 import { getRequestMethod, transformDotCaseToTitleCase } from "./utils";
 import StreamStudioInstance from "./index";
 import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET } from "./types/options";
-import { GROUPS_TO_SKIP, Request, RequestDefinition, RequestMethod } from "./types/apiDefinition";
+import { GROUPS_TO_SKIP, RequestDefinition, RequestMethod } from "./types/apiDefinition";
 import { CompanionCommonCallbackContext } from "@companion-module/base/dist/module-api/common";
-import { CompanionControlType } from "./types/stateStore";
 import { DEFAULT_CHOICE_ID, getInput } from "./inputs";
 
 const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstance) => {
@@ -25,14 +23,7 @@ const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstanc
 
         request?.requestParams?.forEach((param) => {
             const { id, type, property, defaultValue } = param;
-            if (type === "boolean" && id !== "controllerValue") {
-                if (!["controllable", "required"].includes(property)) {
-                    return;
-                }
-                const value = !ssInstance.actionsState[action.controlId].value;
-                message[id] = value;
-                return;
-            }
+            if (type === "boolean" && id !== "controllerValue") return;
             let value = action.options[id] as InputValue;
             if (typeof value === "undefined" || value === "undefined") {
                 // Handling required const parameters
@@ -73,8 +64,6 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
         };
 
         group.requests.forEach((request) => {
-            // To be removed when all requests gets a prettyName
-            // if (request.pretty_name === "") return;
             const { requestType, requestParams, hidden } = request;
 
             if (hidden) return;
@@ -141,57 +130,15 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                 options.push(getInput(param, request, ssInstance, isVisible));
             });
 
-            const getRequestType = `${requestType.substring(0, requestType.length - 3)}get`;
-
-            const getRequest = group.requests.find((request) => request.requestType === getRequestType);
-
             const action: CompanionActionDefinition = {
                 name: `${group.name}: ${request.pretty_name ? request.pretty_name : request.requestType}`,
                 options: options,
                 callback: getCallback(request, ssInstance),
-                subscribe: (action: CompanionActionInfo) => {
+                subscribe: () => {
                     request?.requestParams?.forEach((param) => {
-                        if (param.type === "boolean" && ["controllable", "required"].includes(param.property)) {
-                            // Add state entry
-                            ssInstance.actionsState[action.controlId] = {
-                                requestType: request.requestType,
-                                paramId: param.id,
-                                value: DEFAULT_CHOICE_ID,
-                                paramValues: action.options,
-                            };
-
-                            // Get initial value
-                            const message: Record<string, InputValue> = {
-                                "request-type": getRequest?.requestType || "",
-                            };
-                            let areAllParametersSet = true;
-                            request.requestParams?.forEach((param) => {
-                                const value = action.options[param.id] as InputValue;
-                                if (value === DEFAULT_CHOICE_ID) areAllParametersSet = false;
-                                message[param.id] = value;
-                            });
-
-                            if (areAllParametersSet) {
-                                ssInstance.sendValueRequest(
-                                    message as Request,
-                                    action.controlId,
-                                    param.id,
-                                    CompanionControlType.ACTION
-                                );
-                            }
-
-                            // Subscribe to notifications
-                            ssInstance.addListenedUpdate(request.requestType, action.controlId);
-                        }
-
                         if (COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET.includes(param.type)) return;
                         ssInstance.getOptions(requestType, param.id);
                     });
-                },
-                unsubscribe: (action: CompanionActionInfo) => {
-                    ssInstance.removeListenedUpdate(action.controlId);
-                    ssInstance.removeListenedUpdate(action.controlId);
-                    delete ssInstance.actionsState[action.controlId];
                 },
             };
 
