@@ -6,18 +6,22 @@ import {
     runEntrypoint,
 } from "@companion-module/base";
 import { Config, getConfigFields } from "./config";
-import { Option, Options } from "./types/options";
+import { Options } from "./types/options";
 import generateActions from "./actions";
 import generateFeedbacks from "./feedbacks";
 import { ListenedUpdates } from "./types/updates";
-import { ApiDefinition, Request } from "./types/apiDefinition";
+import { ApiDefinition, ParamOption, Request } from "./types/apiDefinition";
 import { generatePresets } from "./presets";
 import { CompanionControlType, ActionsState, FeedbacksState } from "./types/stateStore";
 import { StreamStudioClient } from "./studioApiClient";
-import apiDefinition from "./apiDefinitions.json";
 import { getParameterTopic } from "./inputs";
 import { generateMessageId } from "./utils";
 import { v4 as uuidv4 } from "uuid";
+import https from "https";
+
+const API_DEFINITION_URL = "https://app-dev.tellyo.com/studio/api/";
+//const API_DEFINITION_URL = "https://app-qa.tellyo.com/studio/api/";
+//const API_DEFINITION_URL = "https://app.tellyo.com/studio/api/";
 
 const RECONNECT_INTERVAL_IN_MS = 2000;
 const PING_INTERVAL_IN_MS = 5000;
@@ -55,8 +59,9 @@ class StreamStudioInstance extends InstanceBase<Config> {
         });
 
         try {
-            this.apiDefinition = apiDefinition as ApiDefinition;
+            this.apiDefinition = await this.getApiDefinition();
         } catch (e) {
+            this.log("error", (e as Error).message);
             this.updateStatus(InstanceStatus.ConnectionFailure);
             return;
         }
@@ -323,6 +328,33 @@ class StreamStudioInstance extends InstanceBase<Config> {
 
     private createVariables = () => {
         this.setVariableDefinitions([{ variableId: "latency", name: "Latency to Stream Studio producer" }]);
+    };
+
+    // GETTING JSON API DEFINITION
+    private getApiDefinition = (): Promise<ApiDefinition> => {
+        this.log("debug", `Fetching JSON API definition from ${API_DEFINITION_URL}`);
+        return new Promise((resolve, reject) => {
+            https
+                .get(API_DEFINITION_URL, (res) => {
+                    let data = "";
+
+                    res.on("data", (chunk) => {
+                        data += chunk;
+                    });
+
+                    res.on("end", () => {
+                        try {
+                            const jsonData = JSON.parse(data);
+                            resolve(jsonData);
+                        } catch (error) {
+                            reject(new Error("Error parsing JSON: " + (error as Error).message));
+                        }
+                    });
+                })
+                .on("error", (err) => {
+                    reject(new Error("Error fetching data: " + err.message));
+                });
+        });
     };
 }
 
