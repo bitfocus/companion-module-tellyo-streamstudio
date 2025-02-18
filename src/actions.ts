@@ -103,12 +103,10 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                 if (param.property.includes("hidden") || param.property === "controllable") return;
 
                 if (id === "controllerMode") {
-                    param.prettyName = "Mode";
                     param.options = param.options?.filter((option) => option.id !== undefined);
                 }
                 let isVisible = undefined;
                 if (id === "controllerValue") {
-                    param.prettyName = "Value";
                     if (hasControllableBooleanParam) {
                         isVisible = (options: CompanionOptionValues) => {
                             return options["controllerMode"] === "fixed";
