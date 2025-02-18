@@ -245,7 +245,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
             .send(request)
             .then((res) => {
                 this.log("debug", `Options response: ${JSON.stringify(res)}`);
-                const options = (res as any)["options"] as Option[];
+                const options = (res as any)["options"] as ParamOption[];
                 const topic = getParameterTopic(requestType, parameterName);
                 this.options[topic] = options;
             })

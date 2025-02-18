@@ -8,9 +8,9 @@ import {
     CompanionOptionValues,
 } from "@companion-module/base";
 import StreamStudioInstance from "./index";
-import { RequestParameter, RequestDefinition } from "./types/apiDefinition";
+import { RequestParameter, RequestDefinition, ParamOption } from "./types/apiDefinition";
 import { commandParameterTypeToInputType } from "./utils";
-import { Option, Options } from "./types/options";
+import { Options } from "./types/options";
 
 export const DEFAULT_CHOICE_ID = "default_option";
 const defaultChoice: DropdownChoice = {
@@ -22,24 +22,15 @@ export const getParameterTopic = (requestType: string, paramId: string) => {
     return `${requestType}/${paramId}`;
 };
 
-const convertParamOptionsToChoices = <T>(options: Option[] | T[]): DropdownChoice[] => {
+const convertParamOptionsToChoices = <T>(options: ParamOption[]): DropdownChoice[] => {
     if (options.length === 0) return [defaultChoice];
-    if (["string", "number"].includes(typeof options[0])) {
-        return [
-            defaultChoice,
-            ...options.map((option) => {
-                const stringOption = typeof option === "string" ? option : (option as number).toString();
-                return { id: stringOption, label: stringOption };
-            }),
-        ];
-    }
     return [
         defaultChoice,
         ...options.map((option) => {
-            const typedOption = option as Option;
+            const typedOption = option;
             return {
-                id: typedOption.id,
-                label: typedOption.value,
+                id: typedOption.id || "undefined",
+                label: typedOption.label,
             };
         }),
     ];
@@ -50,7 +41,7 @@ const getChoices = <T>(
     requestType: string,
     availableOptions: Options
 ): DropdownChoice[] => {
-    if (param.type === "select" && param.values) return convertParamOptionsToChoices(param.values);
+    if (param.type === "select" && param.options) return convertParamOptionsToChoices(param.options);
     const topic = getParameterTopic(requestType, param.id);
     if (typeof availableOptions[topic] !== "undefined") return convertParamOptionsToChoices(availableOptions[topic]);
     return [{ id: 0, label: "No options available." }];

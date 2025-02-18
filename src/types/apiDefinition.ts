@@ -46,6 +46,7 @@ export interface RequestParameter<ValueType> {
     values?: Array<ValueType>;
     defaultValue?: ValueType;
     range?: Range<ValueType>;
+    options?: Array<ParamOption>;
 }
 
 export interface RequestDefinition {
@@ -76,4 +77,9 @@ export const GROUPS_TO_SKIP = ["frontend"];
 export enum RequestMethod {
     GET = "get",
     SET = "set",
+}
+
+export interface ParamOption {
+    id?: string | number;
+    label: string;
 }

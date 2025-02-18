@@ -34,7 +34,7 @@ const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstanc
                 return;
             }
             let value = action.options[id] as InputValue;
-            if (typeof value === "undefined") {
+            if (typeof value === "undefined" || value === "undefined") {
                 // Handling required const parameters
                 if (property !== "required") return;
                 if (defaultValue) value = defaultValue;
