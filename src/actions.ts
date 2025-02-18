@@ -102,20 +102,9 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                 }
                 if (param.property.includes("hidden") || param.property === "controllable") return;
 
-                // Temporary solution
                 if (id === "controllerMode") {
                     param.prettyName = "Mode";
-                    if (hasControllableBooleanParam && param.values && typeof param.values[0] === "string") {
-                        param.values = param.values
-                            ?.filter((value) => value !== "relative")
-                            .map((value) => ({
-                                id: value,
-                                value: value === "default" ? "toggle" : value,
-                            }));
-                    }
-                    if (hasControllableNumberParam && param.values && typeof param.values[0] === "string") {
-                        param.values = param.values?.filter((value) => value !== "default");
-                    }
+                    param.options = param.options?.filter((option) => option.id !== undefined);
                 }
                 let isVisible = undefined;
                 if (id === "controllerValue") {
