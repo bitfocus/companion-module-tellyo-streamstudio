@@ -17,11 +17,8 @@ import { StreamStudioClient } from "./studioApiClient";
 import { getParameterTopic } from "./inputs";
 import { generateMessageId } from "./utils";
 import { v4 as uuidv4 } from "uuid";
-import https from "https";
 
-const API_DEFINITION_URL = "https://app-dev.tellyo.com/studio/api/";
-//const API_DEFINITION_URL = "https://app-qa.tellyo.com/studio/api/";
-//const API_DEFINITION_URL = "https://app.tellyo.com/studio/api/";
+const API_DEFINITION_REQUEST_TYPE = "commands.get";
 
 const RECONNECT_INTERVAL_IN_MS = 2000;
 const PING_INTERVAL_IN_MS = 5000;
@@ -59,14 +56,6 @@ class StreamStudioInstance extends InstanceBase<Config> {
         });
 
         try {
-            this.apiDefinition = await this.getApiDefinition();
-        } catch (e) {
-            this.log("error", (e as Error).message);
-            this.updateStatus(InstanceStatus.ConnectionFailure);
-            return;
-        }
-
-        try {
             await this.connectToWsServer();
         } catch (e) {
             this.updateStatus(InstanceStatus.ConnectionFailure);
@@ -102,8 +91,16 @@ class StreamStudioInstance extends InstanceBase<Config> {
     }
 
     // ACTIONS / FEEDBACKS / PRESETS MANAGEMENT
-    private onConnection = () => {
+    private onConnection = async () => {
         this.sessionId = uuidv4();
+        try {
+            await this.getApiDefinition();
+        } catch (e) {
+            this.log("error", `Failed to get API definition: ${JSON.stringify(e)}`);
+            this.updateStatus(InstanceStatus.ConnectionFailure);
+            this.client.disconnect();
+            return;
+        }
         this.log("debug", "Connected.");
         this.sendHello();
         this.updateStatus(InstanceStatus.Ok);
@@ -331,30 +328,10 @@ class StreamStudioInstance extends InstanceBase<Config> {
     };
 
     // GETTING JSON API DEFINITION
-    private getApiDefinition = (): Promise<ApiDefinition> => {
-        this.log("debug", `Fetching JSON API definition from ${API_DEFINITION_URL}`);
-        return new Promise((resolve, reject) => {
-            https
-                .get(API_DEFINITION_URL, (res) => {
-                    let data = "";
-
-                    res.on("data", (chunk) => {
-                        data += chunk;
-                    });
-
-                    res.on("end", () => {
-                        try {
-                            const jsonData = JSON.parse(data);
-                            resolve(jsonData);
-                        } catch (error) {
-                            reject(new Error("Error parsing JSON: " + (error as Error).message));
-                        }
-                    });
-                })
-                .on("error", (err) => {
-                    reject(new Error("Error fetching data: " + err.message));
-                });
-        });
+    private getApiDefinition = async () => {
+        this.log("debug", `Fetching JSON API definition from ${API_DEFINITION_REQUEST_TYPE} request.`);
+        const res = await this.client.send({ "request-type": API_DEFINITION_REQUEST_TYPE });
+        this.apiDefinition = res.commands as ApiDefinition;
     };
 }
 
