@@ -18,7 +18,7 @@ import { getParameterTopic } from "./inputs";
 import { generateMessageId } from "./utils";
 import { v4 as uuidv4 } from "uuid";
 
-const API_DEFINITION_REQUEST_TYPE = "commands.get";
+const API_DEFINITION_REQUEST_TYPE = "api.get";
 
 const RECONNECT_INTERVAL_IN_MS = 2000;
 const PING_INTERVAL_IN_MS = 5000;
@@ -331,7 +331,7 @@ class StreamStudioInstance extends InstanceBase<Config> {
     private getApiDefinition = async () => {
         this.log("debug", `Fetching JSON API definition from ${API_DEFINITION_REQUEST_TYPE} request.`);
         const res = await this.client.send({ "request-type": API_DEFINITION_REQUEST_TYPE });
-        this.apiDefinition = res.commands as ApiDefinition;
+        this.apiDefinition = res.api as ApiDefinition;
     };
 }
 
