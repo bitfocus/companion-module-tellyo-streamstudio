@@ -74,7 +74,7 @@ const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackD
 
             if (method !== RequestMethod.GET) return;
 
-            const options: SomeCompanionFeedbackInputField[] = [];
+            let options: SomeCompanionFeedbackInputField[] = [];
 
             if (request.doc_request_description) {
                 options.push({
@@ -86,14 +86,18 @@ const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackD
             }
 
             requestParams?.forEach((param) => {
-                options.push(getInput(param, request, ssInstance));
+                options = options.concat(
+                    getInput(param, request, ssInstance, "feedback") as SomeCompanionFeedbackInputField[]
+                );
             });
             let controlledParamId;
             responseParams?.forEach((param) => {
                 const { property, type, id } = param;
                 if (["controllable", "required"].includes(property)) {
                     if (type === "boolean") return;
-                    options.push(getInput(param, request, ssInstance));
+                    options = options.concat(
+                        getInput(param, request, ssInstance, "feedback") as SomeCompanionFeedbackInputField[]
+                    );
                     controlledParamId = id;
                 }
             });

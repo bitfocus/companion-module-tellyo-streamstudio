@@ -11,38 +11,71 @@ import StreamStudioInstance from "./index";
 import { COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET } from "./types/options";
 import { GROUPS_TO_SKIP, RequestDefinition, RequestMethod } from "./types/apiDefinition";
 import { CompanionCommonCallbackContext } from "@companion-module/base/dist/module-api/common";
-import { DEFAULT_CHOICE_ID, getInput } from "./inputs";
+import { DEFAULT_CHOICE_ID, getInput, useVariablesInputId } from "./inputs";
 
 const getCallback = (request: RequestDefinition, ssInstance: StreamStudioInstance) => {
-    return (action: CompanionActionEvent, _context: CompanionCommonCallbackContext) => {
+    return async (action: CompanionActionEvent, _context: CompanionCommonCallbackContext) => {
         const message: any = {
             "request-type": request.requestType,
         };
 
         let requiredParamNotSet = false;
-
-        request?.requestParams?.forEach((param) => {
-            const { id, type, property, defaultValue } = param;
-            if (type === "boolean" && id !== "controllerValue") return;
-            let value = action.options[id] as InputValue;
-            if (typeof value === "undefined" || value === "undefined") {
-                // Handling required const parameters
-                if (property !== "required") return;
-                if (defaultValue) value = defaultValue;
-            }
-            if (value === DEFAULT_CHOICE_ID) {
-                if (property === "required") {
-                    requiredParamNotSet = true;
+        let variablesValueNotANumber = false;
+        let failedToParseVariables = false;
+        if (request.requestParams) {
+            for (let param of request?.requestParams) {
+                const { id, type, property, defaultValue } = param;
+                if (type === "boolean" && id !== "controllerValue") continue;
+                let value = action.options[id] as InputValue;
+                if (typeof value === "undefined" || value === "undefined") {
+                    // Handling required const parameters
+                    if (property !== "required") continue;
+                    if (defaultValue) value = defaultValue;
                 }
-                return;
+                if (value === DEFAULT_CHOICE_ID) {
+                    if (property === "required") {
+                        requiredParamNotSet = true;
+                    }
+                    continue;
+                }
+                try {
+                    if (
+                        id === "controllerValue" &&
+                        type === "number" &&
+                        (action.options[useVariablesInputId] as boolean)
+                    ) {
+                        const parsed = await ssInstance.parseVariablesInString(action.options[`${id}-vars`] as string);
+                        value = parseFloat(parsed);
+                        if (isNaN(value)) variablesValueNotANumber = true;
+                    }
+                    if (id === "controllerValue" && type === "string") {
+                        value = await ssInstance.parseVariablesInString(action.options[id] as string);
+                    }
+                } catch (e) {
+                    failedToParseVariables = true;
+                }
+                message[id] = value;
             }
-            message[id] = value;
-        });
+        }
 
         if (requiredParamNotSet) {
             ssInstance.log(
                 "error",
                 `Executing ${request.requestType}: command aborted because not all required parameters are set.`
+            );
+            return;
+        }
+        if (variablesValueNotANumber) {
+            ssInstance.log(
+                "error",
+                `Executing ${request.requestType}: command aborted because expression with variables could not be converted to a number.`
+            );
+            return;
+        }
+        if (failedToParseVariables) {
+            ssInstance.log(
+                "error",
+                `Executing ${request.requestType}: command aborted because expression with variables is invalid.`
             );
             return;
         }
@@ -76,7 +109,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
             let hasControllableNumberParam = false;
             const hasControllerModeParam = requestParams?.find((param) => param.id === "controllerMode");
 
-            const options: SomeCompanionActionInputField[] = [];
+            let options: SomeCompanionActionInputField[] = [];
 
             if (request.doc_request_description) {
                 options.push({
@@ -114,7 +147,7 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
                     }
                 }
 
-                options.push(getInput(param, request, ssInstance, isVisible));
+                options = options.concat(getInput(param, request, ssInstance, "action", isVisible));
             });
 
             const action: CompanionActionDefinition = {
