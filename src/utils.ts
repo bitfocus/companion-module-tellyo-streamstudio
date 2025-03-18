@@ -9,6 +9,11 @@ export const transformDotCaseToTitleCase = (text: string) => {
         .join(" ");
 };
 
+export const transformCamelCaseToNormalCase = (text: string) => {
+    const result = text.replace(/([A-Z])/g, " $1");
+    return result.charAt(0).toUpperCase() + result.slice(1).toLowerCase();
+};
+
 export const commandParameterTypeToInputType = (type: ParameterType) => {
     switch (type) {
         case "number":

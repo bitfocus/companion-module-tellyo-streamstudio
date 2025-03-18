@@ -10,7 +10,7 @@ import {
 } from "@companion-module/base";
 import StreamStudioInstance from "./index";
 import { RequestParameter, RequestDefinition, ParamOption } from "./types/apiDefinition";
-import { commandParameterTypeToInputType } from "./utils";
+import { commandParameterTypeToInputType, transformCamelCaseToNormalCase } from "./utils";
 import { Options } from "./types/options";
 
 export const DEFAULT_CHOICE_ID = "default_option";
@@ -57,12 +57,11 @@ export const getInput = <T>(
     isVisible?: (options: CompanionOptionValues) => boolean
 ): SomeCompanionActionInputField[] | SomeCompanionFeedbackInputField[] => {
     const inputType = commandParameterTypeToInputType(param.type);
+    const name = param.prettyName ? param.prettyName : transformCamelCaseToNormalCase(param.id);
     switch (inputType) {
         case "number": {
             const inputs: SomeCompanionActionInputField[] = [];
-            const label = param.range
-                ? `${param.prettyName} (min ${param.range.min}, max ${param.range.max})`
-                : param.prettyName;
+            const label = param.range ? `${name} (min ${param.range.min}, max ${param.range.max})` : name;
 
             if (param.id === "controllerValue" && actionOrFeedback === "action") {
                 const useVariablesCheckbox: CompanionInputFieldCheckbox = {
@@ -74,7 +73,7 @@ export const getInput = <T>(
                 const variablesInput: CompanionInputFieldTextInput = {
                     type: "textinput",
                     id: `${param.id}-vars`,
-                    label: param.prettyName,
+                    label: name,
                     default: typeof param.defaultValue === "number" ? param.defaultValue.toString() : "0",
                     isVisible: (options) => options.useVariables === true,
                     useVariables: { local: true },
@@ -100,7 +99,7 @@ export const getInput = <T>(
             const input: CompanionInputFieldTextInput = {
                 type: "textinput",
                 id: param.id,
-                label: param.prettyName,
+                label: name,
                 default: typeof param.defaultValue === "string" ? param.defaultValue : undefined,
                 isVisible,
                 useVariables:
@@ -112,7 +111,7 @@ export const getInput = <T>(
             const input: CompanionInputFieldCheckbox = {
                 type: "checkbox",
                 id: param.id,
-                label: param.prettyName,
+                label: name,
                 default: typeof param.defaultValue === "boolean" ? param.defaultValue : false,
                 isVisible,
             };
@@ -123,7 +122,7 @@ export const getInput = <T>(
             const input: CompanionInputFieldDropdown = {
                 type: "dropdown",
                 id: param.id,
-                label: `${param.prettyName}${param.property === "required" ? " (required)" : ""}`,
+                label: `${name}${param.property === "required" ? " (required)" : ""}`,
                 choices,
                 default: DEFAULT_CHOICE_ID,
                 isVisible,
