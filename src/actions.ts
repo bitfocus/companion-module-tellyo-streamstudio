@@ -151,7 +151,9 @@ const generateActions = (ssInstance: StreamStudioInstance): CompanionActionDefin
             });
 
             const action: CompanionActionDefinition = {
-                name: `${group.name}: ${request.pretty_name ? request.pretty_name : request.requestType}`,
+                name: `${group.name}: ${
+                    request.pretty_name ? request.pretty_name : transformDotCaseToTitleCase(request.requestType)
+                }`,
                 options: options,
                 callback: getCallback(request, ssInstance),
                 subscribe: () => {
