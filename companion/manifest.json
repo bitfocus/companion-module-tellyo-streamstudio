@@ -10,8 +10,7 @@
 	"maintainers": [
 		{
 			"name": "Paweł Jaśpiński",
-			"email": "pawel.jaspinski@tellyo.com",
-			"url": "https://tellyo.com/"
+			"email": "pawel.jaspinski@tellyo.com"
 		}
 	],
 	"legacyIds": ["companion-module-tellyo-streamstudio"],
