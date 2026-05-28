@@ -22,7 +22,7 @@
 		"@companion-module/base": "^1.12.1",
 		"events": "^3.3.0",
 		"uuid": "^9.0.0",
-		"ws": "^8.17.1"
+		"ws": "^8.20.1"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^1.5.2",
