@@ -15,6 +15,10 @@ import { CompanionControlType } from "./types/stateStore";
 import { getInput } from "./inputs";
 
 const DEFAULT_CHOICE_ID = "default_option";
+const REQUEST_TYPE_KEY = "request-type";
+
+const isControllable = (prop?: string) =>
+    prop === "controllable" || prop === "required";
 
 export enum Color {
     WHITE = combineRgb(255, 255, 255),
@@ -38,102 +42,156 @@ export enum Feedback {
     AUDIO_OUTPUT_MUTED = "AudioOutputMuted",
 }
 
-const getCallback = (ssInstance: StreamStudioInstance, requestType: string, controlledParamId?: string) => {
+const getCallback = (
+    ssInstance: StreamStudioInstance,
+    requestType: string,
+    controlledParamId?: string
+) => {
     return (feedback: CompanionFeedbackBooleanEvent) => {
-        const value = ssInstance.feedbacksState[feedback.controlId].value;
-        if (typeof value === "boolean") return value;
-        if (value === DEFAULT_CHOICE_ID) return false;
-        if (!controlledParamId) {
-            ssInstance.log("error", `Request ${requestType} - no value for controlled param.`);
+        const state = ssInstance.feedbacksState[feedback.controlId];
+
+        if (!state) {
+            ssInstance.log(
+                "warn",
+                `Feedback state missing for controlId: ${feedback.controlId}`
+            );
             return false;
         }
+
+        const value = state.value;
+
+        if (typeof value === "boolean") return value;
+        if (value === DEFAULT_CHOICE_ID) return false;
+
+        if (!controlledParamId) {
+            ssInstance.log(
+                "error",
+                `Request ${requestType} - no value for controlled param.`
+            );
+            return false;
+        }
+
         return value === feedback.options[controlledParamId];
     };
 };
 
-const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackDefinitions => {
+const generateFeedbacks = (
+    ssInstance: StreamStudioInstance
+): CompanionFeedbackDefinitions => {
     const feedbacks: CompanionFeedbackDefinitions = {};
 
     const { apiDefinition } = ssInstance;
     if (!apiDefinition) return feedbacks;
-    for (const [key, value] of Object.entries(apiDefinition)) {
-        if (GROUPS_TO_SKIP.includes(key)) continue;
+
+    const groups = Object.entries(apiDefinition).filter(
+        ([key]) => !GROUPS_TO_SKIP.includes(key)
+    );
+
+    for (const [key, value] of groups) {
         const group = {
             name: transformDotCaseToTitleCase(key),
             id: key,
             requests: value,
         };
+
         group.requests.forEach((request) => {
-            // To be removed when all requests gets a prettyName
             if (request.pretty_name === "") return;
-            const { requestType, requestParams, hidden, responseParams } = request;
+
+            const {
+                requestType,
+                requestParams = [],
+                responseParams = [],
+                hidden,
+                pretty_name,
+                doc_request_description,
+            } = request;
 
             if (hidden) return;
 
             const method = getRequestMethod(requestType);
-
             if (method !== RequestMethod.GET) return;
 
             let options: SomeCompanionFeedbackInputField[] = [];
 
-            if (request.doc_request_description) {
+            if (doc_request_description) {
                 options.push({
                     id: "description",
                     type: "static-text",
                     label: "Description",
-                    value: request.doc_request_description,
+                    value: doc_request_description,
                 });
             }
 
-            requestParams?.forEach((param) => {
+            requestParams.forEach((param) => {
                 options = options.concat(
                     getInput(param, request, ssInstance, "feedback") as SomeCompanionFeedbackInputField[]
                 );
             });
-            let controlledParamId;
-            responseParams?.forEach((param) => {
+
+            let controlledParamId: string | undefined;
+
+            responseParams.forEach((param) => {
                 const { property, type, id } = param;
-                if (["controllable", "required"].includes(property)) {
+
+                if (isControllable(property)) {
                     if (type === "boolean") return;
+
                     options = options.concat(
                         getInput(param, request, ssInstance, "feedback") as SomeCompanionFeedbackInputField[]
                     );
+
                     controlledParamId = id;
                 }
             });
 
-            const setRequestType = `${requestType.substring(0, requestType.length - 3)}set`;
+            const setRequestType = `${requestType.substring(
+                0,
+                requestType.length - 3
+            )}set`;
 
             const feedback: CompanionFeedbackDefinition = {
-                name: `${group.name}: ${request.pretty_name}`,
+                name: `${group.name}: ${pretty_name}`,
                 options,
                 type: "boolean",
+
                 defaultStyle: {
                     bgcolor: Color.RED,
                     color: Color.BLACK,
                 },
-                callback: getCallback(ssInstance, requestType, controlledParamId),
+
+                callback: getCallback(
+                    ssInstance,
+                    requestType,
+                    controlledParamId
+                ),
+
                 subscribe: (feedback: CompanionFeedbackInfo) => {
-                    request?.responseParams?.forEach((param) => {
-                        if (["controllable", "required"].includes(param.property)) {
-                            // Add state entry
+                    responseParams.forEach((param) => {
+                        if (isControllable(param.property)) {
                             ssInstance.feedbacksState[feedback.controlId] = {
                                 requestType: setRequestType,
                                 paramId: param.id,
                                 value: DEFAULT_CHOICE_ID,
                                 paramValues: feedback.options,
                                 companionInstanceId: feedback.id,
-                                requestParamsIds: requestParams ? requestParams?.map((param) => param.id) : [],
+                                requestParamsIds: requestParams.map(
+                                    (p) => p.id
+                                ),
                             };
 
-                            // Get initial value
-                            const message: Record<string, InputValue> = {
-                                "request-type": request.requestType,
+                            const message: Partial<Request> = {
+                                [REQUEST_TYPE_KEY]: request.requestType,
                             };
+
                             let areAllParametersSet = true;
-                            request.requestParams?.forEach((param) => {
-                                const value = feedback.options[param.id] as InputValue;
-                                if (value === DEFAULT_CHOICE_ID) areAllParametersSet = false;
+
+                            requestParams.forEach((param) => {
+                                const value =
+                                    feedback.options[param.id] as InputValue;
+
+                                if (value === DEFAULT_CHOICE_ID)
+                                    areAllParametersSet = false;
+
                                 message[param.id] = value;
                             });
 
@@ -146,23 +204,49 @@ const generateFeedbacks = (ssInstance: StreamStudioInstance): CompanionFeedbackD
                                 );
                             }
 
-                            // Subscribe to notifications
-                            ssInstance.addListenedUpdate(setRequestType, feedback.controlId);
+                            ssInstance.addListenedUpdate(
+                                setRequestType,
+                                feedback.controlId
+                            );
+
+                            ssInstance.log(
+                                "debug",
+                                `Subscribed feedback ${requestType} (${feedback.controlId})`
+                            );
                         }
                     });
 
-                    requestParams?.forEach((param) => {
-                        if (COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET.includes(param.type)) return;
+                    requestParams.forEach((param) => {
+                        if (
+                            COMMAND_PARMS_TYPES_WITHOUT_OPTIONS_TO_GET.includes(
+                                param.type
+                            )
+                        )
+                            return;
+
                         ssInstance.getOptions(requestType, param.id);
                     });
                 },
+
                 unsubscribe: (feedback: CompanionFeedbackInfo) => {
                     ssInstance.removeListenedUpdate(feedback.controlId);
                     delete ssInstance.feedbacksState[feedback.controlId];
+
+                    ssInstance.log(
+                        "debug",
+                        `Unsubscribed feedback (${feedback.controlId})`
+                    );
                 },
             };
 
-            feedbacks[request.requestType] = feedback;
+            if (!feedbacks[request.requestType]) {
+                feedbacks[request.requestType] = feedback;
+            } else {
+                ssInstance.log(
+                    "warn",
+                    `Duplicate feedback detected: ${request.requestType}`
+                );
+            }
         });
     }
 
